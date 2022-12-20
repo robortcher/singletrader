@@ -92,8 +92,8 @@ class DataH:
 
 def download_jq(symbol_list,start_date,end_date,**kwargs):
     import jqdatasdk as jq
-    jq.auth(kwargs['user', kwargs['password']])
-    
+    # jq.auth(kwargs['user', kwargs['password']])
+    jq.auth('15111126561','Wbzg207182')
     symbol_list = symbol_list if symbol_list is not None else jq.get_all_securities().index.tolist()
     data = jq.get_price(security=symbol_list,start_date=start_date,end_date=end_date, fields=['open', 'close', 'high','low','volume','paused'],panel=False,**kwargs)
     data = data.rename(columns = {'time':DataH.date_col, 'code':DataH.symbol_col})
