@@ -10,7 +10,7 @@ class MysqlConfig(DataBaseConfig):
     pysql_package = 'pymysql' #sql python包
     port = '3306'
     username = 'root'
-    password = 'xiao19940929'
+    password = 'root'
     
 
 class PostgresqlConfig(DataBaseConfig):
