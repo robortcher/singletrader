@@ -207,7 +207,7 @@ def get_bl_return_cov(
         frequency=252,
         tau=1,
         report=False,
-        cov_method = None,#'single_factor',
+        cov_method = 'single_factor',
         f_views=None
     ):
     r"""

@@ -197,6 +197,7 @@ class Account():
                    for _symbol in self.position.current_positions})
         return mv / self.total_asset        
 
+    @property
     def turnover_ratio(self):
         return self.hist_records['amount'].groupby(level='datetime').sum() / self.hist_total_asset
 

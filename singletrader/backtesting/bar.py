@@ -68,7 +68,14 @@ class DataH:
 
     
     def _download_from_src(self,**kwargs):
-        return self.src
+        start_date= kwargs.get('start_date',None)
+        end_date =  kwargs.get('end_date',None)
+        _d = self.src.copy()
+        if start_date is not None:
+            _d = _d[self.src[self.date_col]>=start_date]
+        if end_date is not None:
+            _d = _d[self.src[self.date_col]<=end_date]
+        return _d
     
     def _transform(self,data):
         data = data.groupby('symbol').apply(lambda x:x.set_index(self.date_col).reindex(self.all_periods))
@@ -103,11 +110,16 @@ def download_jq(symbol_list,start_date,end_date,**kwargs):
 def download_yahoo(symbol_list,start_date,end_date,**kwargs):
     import yfinance as yf
     data = yf.download(tickers=symbol_list, start=start_date, end=end_date,**kwargs)
+    data = data.stack()
+    data['factor'] = data['Adj Close']/data['Close']
     if len(symbol_list)>1:
-        data = data.stack().drop('Close',axis=1)
+        data = data.drop('Close',axis=1)
     else:
         data['symbol'] = symbol_list[0]
         data = data.set_index('symbol',append=True)
+    
+    data[['High','Low','Open']] = data[['High','Low','Open']].apply(lambda x:x*data['factor'])
+    data['Volume'] = data['Volume'] / data['factor']
     data.index = data.index.set_names([DataH.date_col,DataH.symbol_col])
     data.columns = [_c.lower() for _c in data.columns]
     data = data.rename(columns = {'adj close':'close'}).reset_index()

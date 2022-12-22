@@ -12,12 +12,14 @@ class BlackLittermanAllocation(BaseStrategy):
     has_sector_constraint: 是否有大类约束, 与sector_constraint同时输入
     """
     def run_bar(self,bar):
-        if len(self.am.close.dropna())<61: #当少于50个历史数据时，不开始组合配置
+        if len(self.am.close.dropna())<60: #当少于50个历史数据时，不开始组合配置
             return 
         
         # returns = self.am.close.pct_change()
         market_caps = self.w_mkt
-        returns = self.am.close.pct_change().reindex(market_caps.index,axis=1)
+        # returns = self.am.close.pct_change().reindex(market_caps.index,axis=1)
+        # returns.iloc[0] =  (self.am.close/self.am.open - 1).iloc[0]
+        returns = (self.am.close/self.am.open - 1).reindex(market_caps.index,axis=1)
         f, V = get_bl_return_cov(prices=returns,market_caps=market_caps,frequency=12)
             
   

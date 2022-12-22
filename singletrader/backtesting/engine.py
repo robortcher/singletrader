@@ -90,13 +90,28 @@ class Engine:
         benchmark_return.name = benchmark
         return (1+benchmark_return.fillna(0)).cumprod()
     
+    def get_all_info(self, key='met_value'):
+        accts_num = self._accounts.__len__()
+        assert accts_num > 0, '并未进行任何回测，请先使用Engine.run_backtest函数运行回测'
+        df = pd.concat([getattr(self._accounts[_i], key) for _i in range(accts_num)],axis=1)
+        df.columns = list(range(accts_num))
+        return df
+    
+    
     def get_all_nv(self):
         accts_num = self._accounts.__len__()
         assert accts_num > 0, '并未进行任何回测，请先使用Engine.run_backtest函数运行回测'
         df = pd.concat([self._accounts[_i].net_value for _i in range(accts_num)],axis=1)
         df.columns = list(range(accts_num))
         return df
+    
+    def get_hist_weights(self):
+        accts_num = self._accounts.__len__()
+        assert accts_num > 0, '并未进行任何回测，请先使用Engine.run_backtest函数运行回测'
+        df =  pd.concat({_i:pd.DataFrame(self._accounts[_i].hist_weights) for _i in range(accts_num)},axis=1).T
+        return df 
 
+    
 
 if __name__ == '__main__':
     from strategy import BaseStrategy,testStrategy,AutoAlloStrategy
