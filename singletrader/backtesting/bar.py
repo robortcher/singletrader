@@ -5,6 +5,7 @@ from collections import OrderedDict
 import pandas as pd
 from datetime import datetime
 from dataclasses import dataclass, field
+import os
 
 class BarDict(OrderedDict):
     def __getitem__(self, key):
@@ -99,8 +100,7 @@ class DataH:
 
 def download_jq(symbol_list,start_date,end_date,**kwargs):
     import jqdatasdk as jq
-    # jq.auth(kwargs['user', kwargs['password']])
-    jq.auth('15111126561','Wbzg207182')
+    jq.auth(os.environ['JQ_USER'],os.environ['JQ_PASSWD'])
     symbol_list = symbol_list if symbol_list is not None else jq.get_all_securities().index.tolist()
     data = jq.get_price(security=symbol_list,start_date=start_date,end_date=end_date, fields=['open', 'close', 'high','low','volume','paused'],panel=False,**kwargs)
     data = data.rename(columns = {'time':DataH.date_col, 'code':DataH.symbol_col})
@@ -147,9 +147,7 @@ if __name__ == '__main__':
     symbol_us = ['IVV','SCHD','AGG','SCHP']
     dh_yf.download(symbol_us)
     bar_generator = dh_yf.bar_generator
-    while True:
-        print(next(bar_generator))
-        logging.info("======over======")
+
     
     dh_jq = DataH(src='jq')
     symbol_cn = ['000001.XSHE','600000.XSHG']
