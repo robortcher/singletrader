@@ -8,7 +8,7 @@ from qlib.data import D
 import qlib
 from collections import OrderedDict
 import datetime
-from ..datautils.dump_bin import get_initial_fields
+# from ..datautils.dump_bin import get_initial_fields
 import pandas as pd
 # from .processors import CSzscore
 __all__ = ['BaseFactor','FormatFactor','SigleFactor','MultiFactor','F', 'ModelFactor']
@@ -29,9 +29,9 @@ class BaseFactor():
     default_freq = 'day'
 
 
-    @classmethod
-    def get_initial_field(cls):
-        return get_initial_fields()
+    # @classmethod
+    # def get_initial_field(cls):
+    #     return get_initial_fields()
 
     def __init__(self,**kwargs):
         self._field=[]

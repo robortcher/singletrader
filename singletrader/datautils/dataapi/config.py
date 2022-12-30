@@ -11,12 +11,17 @@ class MysqlConfig(DataBaseConfig):
     port = '3306'
     username = 'root'
     password = 'root'
+    sql_type = 'mysql'
     
 
 class PostgresqlConfig(DataBaseConfig):
     sql_manager = 'postgresql' #sql数据库类型
     pysql_package = 'psycopg2' #sql python包
+    username = 'postgres'
+    password = 'postgres'
     port = '5432'
+    sql_type = 'pgsql'
+    
 
 
 class ValuationConfig(MysqlConfig):

@@ -73,8 +73,11 @@ class data_api_mode():
 
         if factor_list is None:
             factor_list = self.get_all_factors()
-        date_filter = f"(\"{self.date_col}\" >= \'{start_date}\') and (\"{self.date_col}\" <= \'{end_date}\')"
-
+        if self.db_config.sql_type=='mysql':
+            date_filter = f"(`{self.date_col}` >= \'{start_date}\') and (`{self.date_col}` <= \'{end_date}\')"
+        elif self.db_config.sql_type=='pgsql':
+            date_filter = f"(\"{self.date_col}\" >= \'{start_date}\') and (\"{self.date_col}\" <= \'{end_date}\')"
+    
         
         #股票筛选
         if universe is not None:
