@@ -11,7 +11,9 @@ from datetime import datetime
 import os, sys
 import json
 import time
-log_file = r'singletrader/shared/logging_info/singletrader'
+# log_file = r'singletrader/shared/logging_info/singletrader'
+log_file = os.environ['HOME'] + '/' + '.singletrader' + '/' + 'logs'
+
 
 def check_and_mkdir(path):
     # logger.info("开始初始化路径...")
@@ -19,7 +21,7 @@ def check_and_mkdir(path):
         os.mkdir(path)
         # logger.info(f"开始创建路径{path}")
 check_and_mkdir(log_file)
-log_path = log_file+'/'+'singletrader.lpg'
+log_path = log_file+'/'+'singletrader.log'
 
 # class _InfoFilter(logging.Filter):
 #     def filter(self, record):
@@ -45,23 +47,6 @@ def _get_filename(*, basename='.log', log_level='info'):
 #     basepath = LogConfig.PATH
 #     return ''.join((
 #         basepath, date_str, '-', os.path.splitext(os.path.basename(file))[0], suffix, ))
-
-
-    def alert(info,title=''):
-        
-        header = {'content-type': 'application/json'}
-        url = 'http://alert.webullbroker.com/v1/notice'#consul-dev
-        url = 'http://pre-alert.webullbroker.com/v1/notice'#consul-pre
-        datas = {'title': title,
-                'content': info,
-                'conversation': {'id': '19:8P0RDXYi0Bx-2dk0gqyd7cRf4OHqxnw0EwxkBBcao5g1@thread.tacv2', 'name': '财富线下告警群'},#consul
-                
-                'service': 'wm-etf-replacement-service',
-                # 'zone': 'local'
-                }
-        jstr = json.dumps(datas)
-        r = requests.post(url, data=jstr, headers=header, timeout=3)
-
 
 
 class LogFactory:
