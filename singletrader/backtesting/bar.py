@@ -126,17 +126,21 @@ def download_yahoo(symbol_list,start_date,end_date,**kwargs):
     return data
 
 
-def bar_resample(data,frequency,symbol_level=1):
-    
+def bar_resample(data,frequency,symbol_level=1,fields=None):
     data_output = {}
-    data_output['close'] = data['close'].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).last())
-    data_output['open'] = data['open'].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).first())
-    data_output['high'] = data['high'].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).max())
-    data_output['low'] = data['low'].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).min())
+    if fields is None:
+        fields = data.columns.tolist()
+    for _field in fields:
+        if _field == 'open':
+            data_output[_field] = data[_field].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).first())
+        elif _field == 'high':
+            data_output[_field] = data[_field].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).max())
+        elif _field == 'low':
+            data_output[_field] = data[_field].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).min())
+        else:      
+            data_output[_field] = data[_field].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).last())
     
-    # data_output['volume'] = data['volume'].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).sum())
-    # data_output['volume'] = data['volume'].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).sum())
-    
+
     
     data_output = pd.concat(data_output,axis=1)
     return data_output

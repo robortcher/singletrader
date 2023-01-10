@@ -45,10 +45,10 @@ def performance_indicator(nvs:pd.DataFrame, riskless_ret=0.02,freq=252):
                                 f'SR rf={riskless_ret}':sharpe_ratio,
                                 'calmar_ratio':calmar_ratio,
                                 'days_number':days_number,
-                                'ann.return 1Y ':ann_return1Y,
-                                'ann.return 2Y':ann_return2Y,
-                                'ann.return 3Y':ann_return3Y,
-                                'ann.return 5Y':ann_return5Y,
+                                # 'ann.return 1Y ':ann_return1Y,
+                                # 'ann.return 2Y':ann_return2Y,
+                                # 'ann.return 3Y':ann_return3Y,
+                                # 'ann.return 5Y':ann_return5Y,
                                 }
     
         _performance_indicator = pd.DataFrame(_performance_indicator,index= ['performance_indicator'])
