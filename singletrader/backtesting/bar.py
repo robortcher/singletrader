@@ -111,17 +111,21 @@ def download_yahoo(symbol_list,start_date,end_date,**kwargs):
     import yfinance as yf
     data = yf.download(tickers=symbol_list, start=start_date, end=end_date,**kwargs)
     data = data.stack()
-    data['factor'] = data['Adj Close']/data['Close']
-    if len(symbol_list)>1:
-        data = data.drop('Close',axis=1)
-    else:
-        data['symbol'] = symbol_list[0]
-        data = data.set_index('symbol',append=True)
     
+    if len(symbol_list)>1:
+        pass
+    else:
+        data = pd.DataFrame(data,columns=[symbol_list[0]])
+        data = data.unstack().swaplevel(0,1,axis=1).stack()
+        data.index = data.index.set_names(['Date','symbol'])
+        # data['symbol'] = symbol_list[0]
+        # data = data.set_index('symbol',append=True)
+    data['factor'] = data['Adj Close']/data['Close']
     data[['High','Low','Open']] = data[['High','Low','Open']].apply(lambda x:x*data['factor'])
     data['Volume'] = data['Volume'] / data['factor']
     data.index = data.index.set_names([DataH.date_col,DataH.symbol_col])
     data.columns = [_c.lower() for _c in data.columns]
+    data = data.drop('close',axis=1)
     data = data.rename(columns = {'adj close':'close'}).reset_index()
     return data
 

@@ -83,7 +83,11 @@ class data_api_mode():
         if universe is not None:
             universe = ["\'" + i.strip() + "\'" for i in universe]
             universe_str =  ','.join(universe)
-            symbol_filter   =  f"(\"{self.symbol_col}\" in ({universe_str}))"
+            if self.db_config.sql_type=='pgsql':
+                symbol_filter   =  f"(\"{self.symbol_col}\" in ({universe_str}))"
+            
+            elif self.db_config.sql_type=='mysql':
+                symbol_filter   =  f"(`{self.symbol_col}` in ({universe_str}))"
 
         else:
             symbol_filter = 'True'
@@ -173,7 +177,10 @@ class data_api_mode():
 
 
 if __name__ == '__main__':
-    from config import ValuationConfig
+    from config import ValuationConfig,SummaryConfig
+    summary_api = data_api_mode(db_config=SummaryConfig)
+    d2 = summary_api.query(trade_date='2022-12-15')
     value_api= data_api_mode(db_config=ValuationConfig)
-    d = value_api.query(start_date='2022-01-01',end_date='2022-12-31')
-    print(d)
+    d1 = value_api.query(trade_date='2022-12-15')
+    import tushare as ts 
+    print(d1)

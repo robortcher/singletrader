@@ -27,4 +27,10 @@ class PostgresqlConfig(DataBaseConfig):
 class ValuationConfig(MysqlConfig):
     
     db_name = 'finance'
+    table_name = 'cn_jq_stk_valuation'
+
+
+class SummaryConfig(MysqlConfig):
+    
+    db_name = 'finance'
     table_name = 'cn_jq_summary'
