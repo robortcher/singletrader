@@ -2,6 +2,7 @@ import pandas as pd
 import datetime
 import logging
 import time
+from singletrader.datautils.dataapi.config import ValuationConfig,SummaryConfig
 
 class data_api_mode():
     """
@@ -175,9 +176,31 @@ class data_api_mode():
         datas = datas.sort_index()
         return datas
 
+ext_bardata_api = data_api_mode(db_config=SummaryConfig)
+ext_bardata_api.all_factors = ['industry_name', 'capitalization', 'circulating_cap', 'eps_ttm', 'sz50', 'hs300', 'zz500', 'zz1000', 'kc50', 'szcz', 'cybz', 'szzs']
+ext_bardata_api2 = data_api_mode(db_config=ValuationConfig)
+ext_bardata_api2.all_factors = ['pe_ratio', 'turnover_ratio', 'pb_ratio', 'ps_ratio', 'pcf_ratio', 'capitalization', 'market_cap', 'circulating_cap', 'circulating_market_cap', 'pe_ratio_lyr']
+
+def get_security_info(**kwargs):
+    instruments = ext_bardata_api.query(trade_date='2022-12-15')
+    instruments = instruments.reset_index()
+    if 'start_date' not in instruments.columns:
+        instruments['start_date'] = pd.to_datetime('2005-01-01').date()
+    if "end_date" not in instruments.columns:
+        instruments['end_date'] = pd.to_datetime('2030-01-01').date()
+    return instruments
+
+def get_trade_days(start_date='2010-01-01',end_date="2022-12-31"):
+    dates = pd.date_range(start_date,end_date)
+    return list(map(lambda x:x.date(),dates))
+
+
 
 if __name__ == '__main__':
+    a = get_security_info()
+    d = get_trade_days()
     from config import ValuationConfig,SummaryConfig
+    
     summary_api = data_api_mode(db_config=SummaryConfig)
     d2 = summary_api.query(trade_date='2022-12-15')
     value_api= data_api_mode(db_config=ValuationConfig)

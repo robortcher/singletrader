@@ -4,7 +4,7 @@
 """
 import pandas as pd
 import numpy as np
-def performance_indicator(nvs:pd.DataFrame, riskless_ret=0.02,freq=252):
+def performance_indicator(nvs:pd.DataFrame, riskless_ret=0.02,freq=252,language='cn'):
     """给定指定净值或收盘价计算相关投资收益评估指标"""
     nvs = pd.DataFrame(nvs)
     def __performance_indicator(nv:pd.Series, riskless_ret):
@@ -37,19 +37,32 @@ def performance_indicator(nvs:pd.DataFrame, riskless_ret=0.02,freq=252):
         
         sharpe_ratio = (ret_ann - riskless_ret) / sigma_ann 
 
-
-        _performance_indicator = {'abs_ret'    : abs_ret,
-                                'ret_ann'    : ret_ann,
-                                'sigma_ann'  : sigma_ann,
-                                'max_drawdown':max_drawdown,
-                                f'SR rf={riskless_ret}':sharpe_ratio,
-                                'calmar_ratio':calmar_ratio,
-                                'days_number':days_number,
-                                # 'ann.return 1Y ':ann_return1Y,
-                                # 'ann.return 2Y':ann_return2Y,
-                                # 'ann.return 3Y':ann_return3Y,
-                                # 'ann.return 5Y':ann_return5Y,
-                                }
+        if language.lower() == 'en':
+            _performance_indicator = {'abs_ret'    : abs_ret,
+                                    'ret_ann'    : ret_ann,
+                                    'sigma_ann'  : sigma_ann,
+                                    'max_drawdown':max_drawdown,
+                                    f'SR rf={riskless_ret}':sharpe_ratio,
+                                    'calmar_ratio':calmar_ratio,
+                                    'days_number':days_number,
+                                    # 'ann.return 1Y ':ann_return1Y,
+                                    # 'ann.return 2Y':ann_return2Y,
+                                    # 'ann.return 3Y':ann_return3Y,
+                                    # 'ann.return 5Y':ann_return5Y,
+                                    }
+        elif language.lower() == 'cn':
+            _performance_indicator = {'累计收益':abs_ret,
+                            '年化收益':ret_ann,
+                            '年化波动率':sigma_ann,
+                            '最大回撤':max_drawdown,
+                            f'夏普比({riskless_ret})':sharpe_ratio,
+                            '年化收益/最大回撤':calmar_ratio,
+                            '累计交易日':days_number,
+                            # 'ann.return 1Y ':ann_return1Y,
+                            # 'ann.return 2Y':ann_return2Y,
+                            # 'ann.return 3Y':ann_return3Y,
+                            # 'ann.return 5Y':ann_return5Y,
+                            }
     
         _performance_indicator = pd.DataFrame(_performance_indicator,index= ['performance_indicator'])
         return _performance_indicator.T

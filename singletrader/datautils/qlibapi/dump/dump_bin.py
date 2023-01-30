@@ -22,7 +22,8 @@ from loguru import logger
 from qlib.utils import fname_to_code, code_to_fname
 
 from singletrader import QLIB_BIN_DATA_PATH
-from singletrader.datautils.dataapi.jqapi import get_security_info,get_trade_days,jq_bar_api,ext_bardata_api_jq, ext_bardata_api2_jq
+# from singletrader.datautils.dataapi.jqapi import get_trade_days,jq_bar_api
+from singletrader.datautils.dataapi.sqlapi import get_security_info,get_trade_days,ext_bardata_api,ext_bardata_api2
 
 
 __all__ = ['DumpAll', 'Update','get_initial_fields']
@@ -33,9 +34,9 @@ __all__ = ['DumpAll', 'Update','get_initial_fields']
 
 
 APIS = {
-    "jq_bar_api":jq_bar_api,
-    "ext_bardata_api_jq":ext_bardata_api_jq,
-    "ext_bardata_api2_jq":ext_bardata_api2_jq
+    # "jq_bar_api":jq_bar_api,
+    "ext_bardata_api_jq":ext_bardata_api,
+    "ext_bardata_api2_jq":ext_bardata_api2
 }
 
 __Ignorded_Fields__ = ["update_date","industry_name"]
@@ -66,7 +67,7 @@ class DumpDataBase:
         qlib_dir: str = QLIB_BIN_DATA_PATH,
         backup_dir: str = None,
         freq: str = "day",
-        max_workers: int = 1,
+        max_workers: int = 8,
         date_field_name: str = "date",
         symbol_field_name: str = "code",
         exclude_fields: str = "",
@@ -245,6 +246,7 @@ class DumpDataBase:
         # instruments.loc[self.end_date_datetime < instruments.end_date, 'end_date'] = self.end_date_datetime
         # instruments_list = instruments[self.symbol_field_name].to_list()
 
+
         instruments = get_security_info()
         if "type" in instruments.columns:
             instruments = instruments[instruments.type == 'stock']
@@ -253,6 +255,7 @@ class DumpDataBase:
                                     (instruments[self.INSTRUMENTS_START_FIELD] <= self.end_date_datetime)]
             instruments.loc[self.end_date_datetime < instruments.end_date, self.INSTRUMENTS_END_FIELD] = self.end_date_datetime
         instruments_list = instruments[self.symbol_field_name].to_list()
+
         return instruments, instruments_list
 
     def save_calendars(self, calendars_data: list):
@@ -379,6 +382,14 @@ class DumpDataAll(DumpDataBase):
         logger.info("start dump features......")
         
         _dump_func = partial(self._dump_bin, calendar_list=self._calendars_list)
+        # if self.instruments_list is None:
+        #     instruments = get_security_info(self.region)
+        #     instruments = instruments[instruments.type == 'stock']
+        #     instruments = instruments[(instruments[self.INSTRUMENTS_END_FIELD] > self.start_date_datetime) & \
+        #                             (instruments[self.INSTRUMENTS_START_FIELD] <= self.end_date_datetime)]
+
+        #     instruments.loc[self.end_date_datetime < instruments.end_date, 'end_date'] = self.end_date_datetime
+        #     self.instruments_list = instruments[self.symbol_field_name].to_list()
         if self.instruments_list is None:
             instruments = get_security_info(self.region)
             if "type" in instruments.columns:
@@ -613,10 +624,10 @@ def dump_other_industry_cons(start_date="2010-01-01",end_date=last_date_str):
         logger.info(f"{index}成分股生成完毕...")
 
     
-    parLapply(index_list, _dump_index_cons)
+    # parLapply(index_list, _dump_index_cons)
 
 def DumpAll():
-    DumpDataAll(api="jq_bar_api")()
+    # DumpDataAll(api="jq_bar_api")()
     DumpDataAll(api="ext_bardata_api2_jq")()
     
     # DumpDataAll(api="ext_bardata_api_jq")()
@@ -631,7 +642,7 @@ def Update():
     
     DumpDataUpdate(api="ext_bardata_api2_jq")._dump_features()#聚宽备用股票拓展行情2
 
-    DumpDataUpdate(api='jq_bar_api')() #更新股票行情数据
+    # DumpDataUpdate(api='jq_bar_api')() #更新股票行情数据
 
 
 

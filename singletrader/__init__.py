@@ -42,6 +42,7 @@ def init():
         logger.info("开始初始化路径...")
         check_and_mkdir(root_dir)
         check_and_mkdir(QLIB_BIN_DATA_PATH)
+        logger.info(f"路径初始化完毕。初始化路径为{QLIB_BIN_DATA_PATH}")
         
         logger.info("开始初始化JQ账号...")
         if not init_and_check_jq():
