@@ -18,7 +18,7 @@ class PostgresqlConfig(DataBaseConfig):
     sql_manager = 'postgresql' #sql数据库类型
     pysql_package = 'psycopg2' #sql python包
     username = 'postgres'
-    password = 'postgres'
+    password = 'xiao19940929'
     port = '5432'
     sql_type = 'pgsql'
     
@@ -34,3 +34,13 @@ class SummaryConfig(MysqlConfig):
     
     db_name = 'finance'
     table_name = 'cn_jq_summary'
+
+class ValuationConfigPG(PostgresqlConfig):
+    db_name = 'finance'
+    table_name = 'cn_jq_stk_valuation'
+
+
+class SummaryConfigPG(PostgresqlConfig):
+    db_name = 'finance'
+    table_name = 'cn_jq_summary'
+

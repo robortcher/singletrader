@@ -1,5 +1,7 @@
 # -*-coding:utf-8 -*-
-
+"""
+从jq获取数据到pg数据库
+"""
 from jqdatasdk import auth, logout
 from jqdatasdk import finance, query, get_fundamentals, valuation, income, get_all_securities, get_trade_days, indicator
 import pandas as pd

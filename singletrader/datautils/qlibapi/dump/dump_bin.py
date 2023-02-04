@@ -23,7 +23,7 @@ from qlib.utils import fname_to_code, code_to_fname
 
 from singletrader import QLIB_BIN_DATA_PATH
 # from singletrader.datautils.dataapi.jqapi import get_trade_days,jq_bar_api
-from singletrader.datautils.dataapi.sqlapi import get_security_info,get_trade_days,ext_bardata_api,ext_bardata_api2
+from singletrader.datautils.dataapi.sqlapi import get_security_info,get_trade_days,ext_bardata_api,ext_bardata_api2,ext_bardata_api2_pg,ext_bardata_api_pg
 
 
 __all__ = ['DumpAll', 'Update','get_initial_fields']
@@ -35,8 +35,8 @@ __all__ = ['DumpAll', 'Update','get_initial_fields']
 
 APIS = {
     # "jq_bar_api":jq_bar_api,
-    "ext_bardata_api_jq":ext_bardata_api,
-    "ext_bardata_api2_jq":ext_bardata_api2
+    "ext_bardata_api_jq":ext_bardata_api_pg,
+    "ext_bardata_api2_jq":ext_bardata_api2_pg
 }
 
 __Ignorded_Fields__ = ["update_date","industry_name"]
@@ -74,7 +74,7 @@ class DumpDataBase:
         include_fields: str = "",
         is_index: bool = False,
         
-        start_date: str = "2022-08-01",
+        start_date: str = "2010-01-01",
         end_date: str = last_date_str,
         
         trade_date: str = None,

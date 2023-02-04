@@ -2,8 +2,8 @@ import pandas as pd
 import datetime
 import logging
 import time
-from singletrader.datautils.dataapi.config import ValuationConfig,SummaryConfig
-
+from singletrader.datautils.dataapi.config import ValuationConfig,SummaryConfig,ValuationConfigPG,SummaryConfigPG
+from sqlalchemy import create_engine
 class data_api_mode():
     """
     单表单列数据接口
@@ -13,6 +13,7 @@ class data_api_mode():
         self.symbol_col = symbol_col
         self.date_col = date_col
         self.table_name = db_config.table_name
+        self.engine = create_engine(f'{self.db_config.sql_manager}+{self.db_config.pysql_package}://{self.db_config.username}:{self.db_config.password}@{self.db_config.host}:{self.db_config.port}/{self.db_config.db_name}')
         # self.name = db_config.name
         self.add_preffix = db_config.add_preffix
         self.all_factors = self.get_all_factors()
@@ -21,10 +22,10 @@ class data_api_mode():
     def __call__(self):
         return self
 
-    @property
-    def engine(self):
-        from sqlalchemy import create_engine
-        return create_engine(f'{self.db_config.sql_manager}+{self.db_config.pysql_package}://{self.db_config.username}:{self.db_config.password}@{self.db_config.host}:{self.db_config.port}/{self.db_config.db_name}')
+    # @property
+    # def engine(self):
+    #     from sqlalchemy import create_engine
+    #     return create_engine(f'{self.db_config.sql_manager}+{self.db_config.pysql_package}://{self.db_config.username}:{self.db_config.password}@{self.db_config.host}:{self.db_config.port}/{self.db_config.db_name}')
 
     
     # @property
@@ -38,7 +39,10 @@ class data_api_mode():
                 preffix_n = len(self.add_preffix.strip())
                 res  = [i[preffix_n:] for i in res if self.add_preffix in i]
         else:
-            sql = f"select column_name from information_schema.columns where table_schema='{self.db_config.db_name}' and table_name='{self.table_name}'"
+            if self.db_config.sql_type=='mysql':
+                sql = f"select column_name from information_schema.columns where table_schema='{self.db_config.db_name}' and table_name='{self.table_name}'"
+            elif self.db_config.sql_type=='pgsql':
+                sql = f"select column_name from information_schema.columns where table_schema='public' and table_name='{self.table_name}'"
             res = pd.read_sql(sql = sql, con = engine)
             res.columns = [_col.lower() for _col in res.columns]
             res = res[~res.isin([self.date_col,self.symbol_col,'update_time'])].dropna()['column_name'].tolist()
@@ -181,6 +185,14 @@ ext_bardata_api.all_factors = ['industry_name', 'capitalization', 'circulating_c
 ext_bardata_api2 = data_api_mode(db_config=ValuationConfig)
 ext_bardata_api2.all_factors = ['pe_ratio', 'turnover_ratio', 'pb_ratio', 'ps_ratio', 'pcf_ratio', 'capitalization', 'market_cap', 'circulating_cap', 'circulating_market_cap', 'pe_ratio_lyr']
 
+
+
+ext_bardata_api_pg = data_api_mode(db_config=SummaryConfigPG)
+ext_bardata_api_pg.all_factors = ['industry_name', 'capitalization', 'circulating_cap', 'eps_ttm', 'sz50', 'hs300', 'zz500', 'zz1000', 'kc50', 'szcz', 'cybz', 'szzs']
+ext_bardata_api2_pg = data_api_mode(db_config=ValuationConfigPG)
+ext_bardata_api2_pg.all_factors = ['pe_ratio', 'turnover_ratio', 'pb_ratio', 'ps_ratio', 'pcf_ratio', 'capitalization', 'market_cap', 'circulating_cap', 'circulating_market_cap', 'pe_ratio_lyr']
+
+
 def get_security_info(**kwargs):
     instruments = ext_bardata_api.query(trade_date='2022-12-15')
     instruments = instruments.reset_index()
@@ -199,7 +211,11 @@ def get_trade_days(start_date='2010-01-01',end_date="2022-12-31"):
 if __name__ == '__main__':
     a = get_security_info()
     d = get_trade_days()
-    from config import ValuationConfig,SummaryConfig
+    from config import ValuationConfig,SummaryConfig,ValuationConfigPG
+    value_api = data_api_mode(db_config=ValuationConfigPG)
+    value_api.all_factors = ['industry_name', 'capitalization', 'circulating_cap', 'eps_ttm', 'sz50', 'hs300', 'zz500', 'zz1000', 'kc50', 'szcz', 'cybz', 'szzs']
+    value_api.get_all_factors()
+    d1 = value_api.query(trade_date='2022-12-15')
     
     summary_api = data_api_mode(db_config=SummaryConfig)
     d2 = summary_api.query(trade_date='2022-12-15')
