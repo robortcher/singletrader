@@ -28,7 +28,8 @@ from singletrader.datautils.dataapi.sqlapi import get_security_info,get_trade_da
 
 __all__ = ['DumpAll', 'Update','get_initial_fields']
 
-
+last_datetime = pd.Timestamp(dt.date.today() - dt.timedelta(1))
+last_date_str = last_datetime.strftime("%Y-%m-%d")
 
 
 
@@ -46,8 +47,7 @@ def get_initial_fields():
     qlib_fields = ["$"+field for field in __Initial_Fields__]
     return qlib_fields
 
-last_datetime = pd.Timestamp(dt.date.today() - dt.timedelta(1))
-last_date_str = last_datetime.strftime("%Y-%m-%d")
+
 
 class DumpDataBase:
     INSTRUMENTS_START_FIELD = "start_date"

@@ -42,6 +42,14 @@ class Postgres(object):
             if not conf:
                 conf = read_yaml(conf_path)
         self.conf = conf
+    
+    @property
+    def conn(self):
+        return psycopg2.connect(database=self.conf.db_name,
+                            user=self.conf.username,
+                            password=self.conf.password,
+                            host=self.conf.host,
+                            port=int(self.conf.port))
         # try:
         #     self.database_postgres = psycopg2.connect(database=conf['database'],
         #                                               user=conf['user'],
@@ -60,11 +68,7 @@ class Postgres(object):
         conf = self.conf
         conn = None
         try:
-            conn = psycopg2.connect(database=conf['database'],
-                                    user=conf['user'],
-                                    password=conf['password'],
-                                    host=conf['host'],
-                                    port=int(conf['port']))
+            conn = self.conn
             cursor = conn.cursor()
             cursor.execute(exec_str)
             exist = cursor.fetchone()[0]
@@ -98,11 +102,12 @@ class Postgres(object):
         :type timestamp_columns: list of str
         """
         conf = self.conf
-        conn = psycopg2.connect(database=conf['database'],
-                                user=conf['user'],
-                                password=conf['password'],
-                                host=conf['host'],
-                                port=int(conf['port']))
+        conn = self.conn
+        # conn = psycopg2.connect(database=conf.db_name,
+        #                             user=conf.username,
+        #                             password=conf.password,
+        #                             host=conf.host,
+        #                             port=int(conf.port))
         cursor = conn.cursor()
         data_list = df.values.tolist()
         columns = list(df.columns)
@@ -201,11 +206,12 @@ class Postgres(object):
         :type timestamp_columns: list of str
         """
         conf = self.conf
-        conn = psycopg2.connect(database=conf['database'],
-                                user=conf['user'],
-                                password=conf['password'],
-                                host=conf['host'],
-                                port=int(conf['port']))
+        conn = self.conn
+        # conn = psycopg2.connect(database=conf.db_name,
+        #                             user=conf.username,
+        #                             password=conf.password,
+        #                             host=conf.host,
+        #                             port=int(conf.port))
         cursor = conn.cursor()
         data_list = df.values.tolist()
         columns = list(df.columns)
@@ -352,11 +358,12 @@ class Postgres(object):
         :return: 查询结果
         """
         conf = self.conf
-        conn = psycopg2.connect(database=conf['database'],
-                                user=conf['user'],
-                                password=conf['password'],
-                                host=conf['host'],
-                                port=int(conf['port']))
+        conn = self.conn
+        # conn = psycopg2.connect(database=conf['database'],
+        #                         user=conf['user'],
+        #                         password=conf['password'],
+        #                         host=conf['host'],
+        #                         port=int(conf['port']))
         cursor = conn.cursor()
         if columns:
             columns_str = ",".join(['"{}"'.format(i) for i in columns])
@@ -393,11 +400,12 @@ class Postgres(object):
         :return: 查询结果
         """
         conf = self.conf
-        conn = psycopg2.connect(database=conf['database'],
-                                user=conf['user'],
-                                password=conf['password'],
-                                host=conf['host'],
-                                port=int(conf['port']))
+        conn = self.conn
+        # conn = psycopg2.connect(database=conf['database'],
+        #                         user=conf['user'],
+        #                         password=conf['password'],
+        #                         host=conf['host'],
+        #                         port=int(conf['port']))
         cursor = conn.cursor()
         if columns:
             columns_str = ",".join(['"{}"'.format(i) for i in columns])
@@ -428,11 +436,12 @@ class Postgres(object):
         :return:
         """
         conf = self.conf
-        conn = psycopg2.connect(database=conf['database'],
-                                user=conf['user'],
-                                password=conf['password'],
-                                host=conf['host'],
-                                port=int(conf['port']))
+        conn = self.conn
+        # conn = psycopg2.connect(database=conf['database'],
+        #                         user=conf['user'],
+        #                         password=conf['password'],
+        #                         host=conf['host'],
+        #                         port=int(conf['port']))
         cursor = conn.cursor(f'{uuid.uuid1()}')
         cursor.execute(sql)
         # count = 0
@@ -463,11 +472,12 @@ class Postgres(object):
 
     def over_insert_df_pro(self, df, table_name, text_column, date_columns=None, add_update_time=True):
         conf = self.conf
-        conn = psycopg2.connect(database=conf['database'],
-                                user=conf['user'],
-                                password=conf['password'],
-                                host=conf['host'],
-                                port=int(conf['port']))
+        conn = self.conn
+        # conn = psycopg2.connect(database=conf['database'],
+        #                         user=conf['user'],
+        #                         password=conf['password'],
+        #                         host=conf['host'],
+        #                         port=int(conf['port']))
         cursor = conn.cursor()
         if add_update_time:
             df['update_time'] = datetime.now()

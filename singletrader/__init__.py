@@ -5,7 +5,7 @@ from multiprocessing import cpu_count
 import os 
 from singletrader.shared.logging import logger
 import qlib
-
+import jqdatasdk as jq
 
 
 def check_and_mkdir(path):
@@ -19,6 +19,7 @@ def init_and_check_jq():
     # logger.info("开始初始化JQ账号...")
     jq_user = os.environ['JQ_USER']
     jq_passwd = os.environ['JQ_PASSWD']
+    jq.auth(jq_user,jq_passwd)
     
     if jq_user is None or jq_passwd is None:
         # logger.info(r"未初始化聚款账号，部分功能无法正常")
