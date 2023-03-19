@@ -39,6 +39,12 @@ def get_data():
         adjskew.name = 'adjskew'
 
 
+        # stddev
+        stddev = raw_data.groupby('code').apply(lambda x:(x['close'].droplevel('code').pct_change().resample('M').apply(lambda x:x.std())))
+        stddev = stddev.stack().swaplevel(0,1)
+        stddev.name = 'stddev'
+
+
         # stddev_diff
         stddev_diff = raw_data.groupby('code').apply(lambda x:(x['close'].droplevel('code').pct_change().resample('M').apply(lambda x:x.std())).diff())
         stddev_diff = stddev_diff.stack().swaplevel(0,1)
@@ -81,7 +87,7 @@ def get_data():
         median_turnover.name = 'amount3M'
 
         #数据合并对齐
-        merged_data = pd.concat([bar_monthly, skew, adjskew,distance, mom6x3,mom9x3,mom12x3,mom,turnover3M,median_turnover,stddev_diff],axis=1)
+        merged_data = pd.concat([bar_monthly, skew, adjskew,distance, mom6x3,mom9x3,mom12x3,mom,turnover3M,median_turnover,stddev_diff,stddev],axis=1)
         save_pkl(merged_data,data_path)
         return merged_data
 

@@ -19,16 +19,26 @@ class FactorEvaluation:
     """
     因子组合构建
     """
-    def __init__(self, bar_data, factor_data,freq=252):
+    def __init__(self, bar_data, factor_data,freq=252,winzorize=True,standardize=True):
         bar_data = pd.DataFrame(bar_data)
         factor_data = pd.DataFrame(factor_data)
         self.bar_data = bar_data
         self.raw_factor_data = factor_data.copy()
-        self.factor_data = factor_data
+        self.infer_factor_data = self.raw_factor_data.copy()
+        self.factor_data = self.infer_factor_data.copy()
+        
+        if winzorize:
+            self.winzorize()
+        if standardize:
+            self.standardize()
+        
         self.freq=freq
+        # self.all_factors = factor_data.columns
+    
     @property
     def all_factors(self):
-        return self.factor_data.columns
+        return self.factor_data.columns.tolist()
+
     
     def get_factor_weight(self, factor_list=None, zero_capital=False, only_long=False, threshold=0.0, holding_period=1):
         """
@@ -261,16 +271,18 @@ class FactorEvaluation:
         # all_columns = [i[0]+'_'+str(i[1])+'D' for i in all_columns]
         res = []
         for i in periods:
-            res.append(self.get_factor_ic(next_n=i,**kwargs))
+            df = self.get_factor_ic(next_n=i,**kwargs)
+            df = df.add_suffix(f'_L{i}')
+            res.append(df)
         res = pd.concat(res,axis=1).dropna(how='all')
         # res = res.reindex(all_columns,axis=1)
         return res
 
 
-
     def industry_neutralize(self):
         # logging.info("正在对因子作行业中性化处理...")
         self.factor_data = self.factor_data.groupby(level=0).apply(industry_neutralize)
+        self.factor_data = self.factor_data.add_suffix('_SN')
         # logging.info("因子的行业中性化处理结束")
         return self.factor_data
 
@@ -298,6 +310,7 @@ class FactorEvaluation:
         return self.factor_data
 
     def neutralize(self, industry_factor_name='industry_name'):
+        """行业+市值中性化"""
         # logging.info("正在对因子作截面中性化处理...")
         bar_data = self.bar_data
         factor_data = self.factor_data
@@ -351,7 +364,7 @@ class FactorEvaluation:
         gp = gp.groupby(level=0).apply(lambda x:x.iloc[-1]-x.iloc[0])
         return gp
     
-    def get_ic_summary(self,include_neu=True,**kwargs):
+    def get_ic_summary(self,SN=True,start_date=None,end_date=None,**kwargs):
         """
         self: 自建类FactorEvaluation
         """
@@ -367,21 +380,18 @@ class FactorEvaluation:
             # result_df.loc['rankic.ir'] = ic_df.mean() /  ic_df.std()
             # result_df.loc['rankic.t-stats'] = ic_df.mean() /  ic_df.std() * ((ic_df.__len__()/12) ** 0.5)
             return result_df
-        
-        ic_result = {}
-        self.winzorize()
-        self.standardize()
-        ic_result['raw'] = _ic_analysis(self,**kwargs)
-        
-        if include_neu:
-            self.industry_neutralize()
-            ic_result['ind_neu'] =  _ic_analysis(self,**kwargs)
+        if start_date is not None or end_date is not None:
+            pass
 
-        ic_result =  pd.concat(ic_result)
-        ic_result = round(ic_result,4)
-        self.factor_data = self.raw_factor_data.copy()
+        #ic_summary
+        ic_result = {}
+        ic_result = _ic_analysis(self,**kwargs)
+
+
+        #gp_summary
+        # gp_result = self.get_group_returns(**kwargs)
         return ic_result
-    
+        
 
     def get_factor_detail_report(self,
                                 factor,
@@ -394,8 +404,6 @@ class FactorEvaluation:
                                 excess_return=False,
                                 ):
         
-        self.winzorize()
-        self.standardize()
         factor_list=[factor]
         periods = list(range(ic_lags[0],ic_lags[1]))
 
@@ -430,7 +438,10 @@ class FactorEvaluation:
 
 
 
+
+
     def factor_ana(self,factor,ep_group,liquidity_group,**kwargs):
+        """获取不同组别factor的"""
         def get_ep_liq_group_ic(factor,group_df=ep_group,**kwargs):
             ics = {}
             group_set = ['low','medium','high']#set(group_df.values)
