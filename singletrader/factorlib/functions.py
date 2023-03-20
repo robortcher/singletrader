@@ -98,8 +98,14 @@ def get_group_returns(factor_data, ret_data, groups=5, holding_period=1, cost=0,
         group_rets_raw = ret_data_raw.groupby(factor_group).apply(lambda x:x.groupby(level=0).mean()).swaplevel(0,1).sort_index()
         group_rets_raw = group_rets_raw.unstack()  
         
-        group_rets['hml'] = group_rets_raw.iloc[:,-1] - group_rets_raw.iloc[:,0]
-        group_rets['lmh'] = group_rets_raw.iloc[:,0] - group_rets_raw.iloc[:,-1]
+        if group_rets_raw.iloc[:,0].mean() >= group_rets_raw.iloc[:,-1].mean():
+            group_rets['Long-Short'] = group_rets_raw.iloc[:,0] - group_rets_raw.iloc[:,-1]
+            group_rets['Long'] = group_rets_raw.iloc[:,0]
+            group_rets['Short'] = group_rets_raw.iloc[:,-1]
+        else:
+            group_rets['Long-Short'] = group_rets_raw.iloc[:,-1] - group_rets_raw.iloc[:,0 ]
+            group_rets['Long'] = group_rets_raw.iloc[:,-1]
+            group_rets['Short'] = group_rets_raw.iloc[:,0]
         group_rets = group_rets.stack() 
     else:
         return None
@@ -107,24 +113,30 @@ def get_group_returns(factor_data, ret_data, groups=5, holding_period=1, cost=0,
     group_rets.name = factor_data.name
     if return_weight:
         group_weights = factor_group.astype(np.float).groupby(factor_group).apply(lambda x:x.unstack().apply(lambda x:(x+1)/(x+1).sum(),axis=1)).fillna(0)#.stack()
-        hml_weight = group_weights[group_weights.index.get_level_values(0)==(groups-1)].droplevel(0) - group_weights[group_weights.index.get_level_values(0)==0].droplevel(0) 
-        hml_weight[factor_data.name] = 'hml'
-        hml_weight = hml_weight.set_index(factor_data.name,append=True).swaplevel(0,1)
+        if group_rets_raw.iloc[:,0].mean() >= group_rets_raw.iloc[:,-1].mean():
+            Long_weight = group_weights[group_weights.index.get_level_values(0)==0].droplevel(0) 
+            Short_weight = group_weights[group_weights.index.get_level_values(0)==(groups-1)].droplevel(0) 
+        else:
+            Long_weight = group_weights[group_weights.index.get_level_values(0)==(groups-1)].droplevel(0) 
+            Short_weight = group_weights[group_weights.index.get_level_values(0)==0].droplevel(0) 
+        Long_weight.name = 'Long'
+        Short_weight.name = 'Short'
+        Long_weight[factor_data.name] = 'Long'
+        Long_weight = Long_weight.set_index(factor_data.name,append=True).swaplevel(0,1)
 
-        lmh_weight = group_weights[group_weights.index.get_level_values(0)==0].droplevel(0) - group_weights[group_weights.index.get_level_values(0)==(groups-1)].droplevel(0) 
-        lmh_weight[factor_data.name] = 'lmh'
-        lmh_weight = lmh_weight.set_index(factor_data.name,append=True).swaplevel(0,1)
+        Short_weight[factor_data.name] = 'Short'
+        Short_weight = Short_weight.set_index(factor_data.name,append=True).swaplevel(0,1)
         
         
-        
-        group_weights = pd.concat([group_weights,hml_weight,lmh_weight])
+        # group_weights = pd.concat(group_weights)
+        group_weights = pd.concat([group_weights,Long_weight,Short_weight])
         #group_weights.name = factor_data.name
         return group_rets, group_weights
     return group_rets
 
 
 
-def get_factor_ic(factor_data, ret_data, method='normal',universe=None):
+def get_factor_ic(factor_data, ret_data, method='normal'):
     """
     获取因子收益
     """
@@ -133,9 +145,9 @@ def get_factor_ic(factor_data, ret_data, method='normal',universe=None):
     # factor_data = factor_data.reindex(fr.index)
     # ret_data = ret_data.reindex(fr.index)
     
-    if universe is not None:
-        # factor_data = factor_data[universe]
-        factor_data = factor_data.reindex(universe.index)[universe]
+    # if universe is not None:
+    #     # factor_data = factor_data[universe]
+    #     factor_data = factor_data.reindex(universe.index)[universe]
         # ret_data = ret_data.reindex(universe.index)[universe]
         # ret_data = ret_data[universe]
     # if method == 'rank':

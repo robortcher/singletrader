@@ -1,5 +1,12 @@
 from abc import abstractmethod
 from functools import partial
+import pandas as pd
+from singletrader import __date_col__,__symbol_col__
+
+
+
+
+
 
 
 class BaseProcessor():

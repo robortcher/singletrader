@@ -7,7 +7,7 @@ import numpy as np
 
 
 
-def performance_indicator(nvs:pd.DataFrame, method='compound',ret_data=False,riskless_ret=0.02,freq=252,language='cn',mkt_return=None):
+def performance_indicator(nvs:pd.DataFrame, method='compound',ret_data=False,riskless_ret=0.0,freq=252,language='cn',mkt_return=None):
     """给定指定净值或收盘价计算相关投资收益评估指标"""
     nvs = pd.DataFrame(nvs)
     def __performance_indicator(nv:pd.Series, ret_data=ret_data,riskless_ret=riskless_ret):
@@ -49,7 +49,7 @@ def performance_indicator(nvs:pd.DataFrame, method='compound',ret_data=False,ris
                                     'ret_ann'    : ret_ann,
                                     'sigma_ann'  : sigma_ann,
                                     'max_drawdown':max_drawdown,
-                                    f'SR rf={riskless_ret}':sharpe_ratio,
+                                    'SR':sharpe_ratio,
                                     'calmar_ratio':calmar_ratio,
                                     # 'ann.return 1Y ':ann_return1Y,
                                     # 'ann.return 2Y':ann_return2Y,

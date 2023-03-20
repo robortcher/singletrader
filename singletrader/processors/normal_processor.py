@@ -8,6 +8,11 @@ def check_and_delete_level(df,delete_level=__date_col__):
         df = df.droplevel(delete_level)
     return df
 
+def _add_cs_data(tcs_data,cs_data):
+    """截面数据在时序上的填充"""
+    return tcs_data.groupby(level=__date_col__).apply(lambda x:pd.concat([x.droplevel(__date_col__),cs_data],axis=1))
+
+
 def winzorize(factor_data,k=5,method='sigma'):
     """
     极值化处理
@@ -45,3 +50,21 @@ def winzorize(factor_data,k=5,method='sigma'):
     elif isinstance(x,pd.DataFrame):
         y = pd.DataFrame(y, index=x.index, columns=x.columns)
     return y
+
+
+
+def standardize(data, method='z-score'):
+    """
+    截面标准化处理
+    Parameters
+    data:pd.DataFrame
+                Multi_Index(date:str or datetime, symbol:str)
+    method:str,'z-score','rank', 'rank_ratio' 
+    """
+    if method == 'z-score':
+        data = (data - data.mean()) / data.std()
+    elif method == 'rank':
+        data = data.rank()
+    elif method == 'rank_ratio':
+        data = data.rank() / data.rank().max()
+    return data

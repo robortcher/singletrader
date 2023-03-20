@@ -86,6 +86,11 @@ def get_data():
         median_turnover= bar_monthly['money'].groupby('code').apply(lambda x:x.rolling(3).median())
         median_turnover.name = 'amount3M'
 
+        # # 下个月收益
+        # forward_return1M = bar_monthly['close'].groupby('code').apply(lambda x:x.shift(-1)/x-1)
+        # forward_return1M.name = 'forward_return1M'
+
+
         #数据合并对齐
         merged_data = pd.concat([bar_monthly, skew, adjskew,distance, mom6x3,mom9x3,mom12x3,mom,turnover3M,median_turnover,stddev_diff,stddev],axis=1)
         save_pkl(merged_data,data_path)
