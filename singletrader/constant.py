@@ -69,7 +69,7 @@ def get_industry_cons(start_date=None, end_date=None, trade_date=current_date, n
     ############行业成分##########
 
         all_trade_dates = get_trade_days(count=1)
-        path = IND_PATH + '/'+all_trade_dates[0].strftime('%Y-%m-%d')+'.pkl'
+        path = IND_PATH + '/'+all_trade_dates[0].strftime('%Y-%m-%d') + '_'+ name +'.pkl'
         if os.path.exists(path):
              return load_pkl(path)
         

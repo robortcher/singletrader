@@ -35,15 +35,18 @@ def winzorize(factor_data,k=5,method='sigma'):
         y = np.where(x >= uplimit, uplimit, np.where(x <=lwlimit, lwlimit, x))
 
     elif method == 'qtile':
-        uplimit = np.quantile(x, q = k[1], axis=0)
-        lwlimit = np.quantile(x, q = k[0], axis=0)
+        if isinstance(k,float):
+            k = (k,1-k)
+        uplimit = np.quantile(x, q = max(k), axis=0)
+        lwlimit = np.quantile(x, q = min(k), axis=0)
         y = np.where(x >= uplimit, uplimit, np.where(x <=lwlimit, lwlimit, x))
     
     elif method == 'qtile-median':
         if isinstance(k,float):
             k = (k,1-k)
-        uplimit = np.quantile(x.dropna(), q = k[1], axis=0)
-        lwlimit = np.quantile(x.dropna(), q = k[0], axis=0)
+        
+        uplimit = np.quantile(x.dropna(), q = max(k), axis=0)
+        lwlimit = np.quantile(x.dropna(), q = min(k), axis=0)
         y = np.where(x >= uplimit, x.median(), np.where(x <=lwlimit, x.median(), x))
     if isinstance(x,pd.Series):
         y = pd.Series(y,index=x.index,name=x.name)

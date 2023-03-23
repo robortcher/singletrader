@@ -49,7 +49,7 @@ def load_pkls(dire_path=None,files=None,n=None):
         all_abs_files = list(map(lambda x: dire_path + '/' + x, all_files))
     else:
         all_abs_files = all_files
-    datas = [load_pkl(file) for file in all_abs_files]
+    datas = pd.concat([load_pkl(file) for file in all_abs_files])
     return datas
 
 def parLapply(iterable, func, CORE_NUM=CORE_NUM,*args, **kwargs):

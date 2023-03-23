@@ -5,7 +5,7 @@ from singletrader.backtesting.strategy import BaseStrategy
 from singletrader.backtesting.account import Account
 from singletrader.performance.common import performance_indicator 
 
-singnals = load_pkls(r'D:\projects\singletrader\samples\contribute\trademodel\predict')
+singnals = load_pkls(r'D:\projects\singletrader_pro\samples\contribute\trademodel\predict')
 
 
 class SingnalFactor(BaseStrategy):

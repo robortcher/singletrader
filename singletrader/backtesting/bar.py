@@ -89,7 +89,7 @@ class DataH:
         return _d
     
     def _transform(self,data):
-        data = data.groupby('symbol').apply(lambda x:x.set_index(self.date_col).reindex(self.all_periods))
+        data = data.groupby(__symbol_col__).apply(lambda x:x.set_index(self.date_col).reindex(self.all_periods))
         del data[self.symbol_col]
         data = data.reset_index()
         # data[self.date_col] = data[self.date_col].astype(np.str)

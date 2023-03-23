@@ -20,18 +20,26 @@ class FactorEvaluation:
     """
     因子组合构建
     """
-    def __init__(self, bar_data, factor_data,freq=252,winzorize=True,standardize=True,industry_neutralize=True):
+    def __init__(self, bar_data, factor_data,freq=252,winzorize=True,standardize=True,industry_neutralize=False):
         bar_data = pd.DataFrame(bar_data)
         factor_data = pd.DataFrame(factor_data)
         self.bar_data = bar_data
         self.raw_factor_data = factor_data.copy()
         self.infer_factor_data = self.raw_factor_data.copy()
         self.factor_data = self.infer_factor_data.copy()
-        
+        self._winzorize = winzorize
+        self._standardize = standardize
+        self._industry_neutralize = industry_neutralize
         if winzorize:
-            self.winzorize()
+            if isinstance(winzorize,dict):
+                self.winzorize(**winzorize)
+            else:
+                self.winzorize()
         if standardize:
-            self.standardize()
+            if isinstance(standardize,dict):
+                self.standardize(**standardize)
+            else:
+                self.standardize()
         if industry_neutralize:
             self.industry_neutralize()
         self.freq=freq
@@ -79,7 +87,7 @@ class FactorEvaluation:
     #     return next_return.stack()
     
 
-    def get_next_return(self, next_n=1, add_shift=1,base='open', neutralize=False,excess_return=False,bar_data=None,total=True):
+    def get_next_return(self, next_n=1, add_shift=1,base='open', neutralize=False,excess_return=False,bar_data=None,total=True,universe=None):
         """
         获取未来指定周期收益
         ----------
@@ -132,10 +140,17 @@ class FactorEvaluation:
                 else:
                     next_return = (price_t1.shift(-next_n) / price_t0.shift(-next_n) - 1).shift(-add_shift)
 
+       
+
+        if universe is not None:
+            next_return = next_return.stack()
+            next_return[universe<=0] = np.nan
+            next_return = next_return.unstack()
         if neutralize:
             xy_data = pd.concat([next_return.stack(),pd.get_dummies(bar_data['industry_name'][bar_data['industry_name']!='nan']),bar_data['circulating_market_cap'].dropna()],axis=1)
             next_return = xy_data.groupby(level=0).apply(get_resid).unstack()
         
+
         if excess_return:
             next_return = next_return.apply(lambda x:x-x.mean(),axis=1)
         next_return.name = f'forward_return_{next_n}'
@@ -206,7 +221,7 @@ class FactorEvaluation:
         if factor_list is None:
             factor_list = self.all_factors
         if ret_data is None:
-            ret_data = self.get_next_return(next_n=next_n, base=base, add_shift=add_shift,excess_return=excess_return)
+            ret_data = self.get_next_return(next_n=next_n, base=base, add_shift=add_shift,excess_return=excess_return,universe=universe)
         group_results = []
         if universe is not None:
             universe = universe.reindex(self.factor_data.index)
@@ -246,10 +261,8 @@ class FactorEvaluation:
                 turnover_ratio = {i:turnover_ratio[i][turnover_ratio[i].index.get_level_values(level=__date_col__)<=end_date] for i in turnover_ratio}
             return group_returns,group_weights,turnover_ratio
 
-    
     def get_factor_returns(self):
         pass
-
 
 
     def get_factor_ic(self,next_n=1,factor_list=None,base='open',method='normal',start_date=None,end_date=None,add_shift=1,excess_return=False,universe=None,total=True):
@@ -277,7 +290,7 @@ class FactorEvaluation:
         return factor_ics
     
     ###批量获取不同周期ic
-    def __get_factor_ics(self,factor_list=None, periods=(1,), base='open',method='rank',start_date=None,end_date=None,add_shift=1,excess_return=False,universe=None, total=True):
+    def __get_factor_ics(self,factor_list=None, periods=(1,), base='open',method='normal',start_date=None,end_date=None,add_shift=1,excess_return=False,universe=None, total=True):
         if factor_list is None:
             factor_list = self.all_factors
         all_columns = list(product(factor_list, periods))
@@ -289,14 +302,14 @@ class FactorEvaluation:
         return res
 
     ###批量获取不同周期ic
-    def get_factor_ics(self,periods=(1,),**kwargs):
+    def get_factor_ics(self,periods=(1,),universe=None,**kwargs):
         # if factor_list is None:
         #     factor_list = self.all_factors
         # all_columns = list(product(factor_list, periods))
         # all_columns = [i[0]+'_'+str(i[1])+'D' for i in all_columns]
         res = []
         for i in periods:
-            df = self.get_factor_ic(next_n=i,**kwargs)
+            df = self.get_factor_ic(next_n=i,universe=universe,**kwargs)
             df = df.add_suffix(f'_L{i}')
             res.append(df)
         res = pd.concat(res,axis=1).dropna(how='all')
@@ -512,16 +525,43 @@ class FactorEvaluation:
             # self.factor_data = self.raw_factor_data.copy()
         return all_perfs
 
-
-
     def factor_ana(self,factor,ep_group,liquidity_group,**kwargs):
         """获取不同组别factor的"""
         def get_ep_liq_group_ic(factor,group_df=ep_group,**kwargs):
             ics = {}
             group_set = ['low','medium','high']#set(group_df.values)
             for group in group_set:
-                ics[group] = ic_analysis(FactorEvaluation(bar_data=self.bar_data,factor_data=self.factor_data[group_df==group][factor],freq=self.freq), **kwargs)
-            ics['total'] = ic_analysis(FactorEvaluation(bar_data=self.bar_data,factor_data=self.factor_data[factor],freq=self.freq), **kwargs)
+                ics[group] = ic_analysis(FactorEvaluation(bar_data=self.bar_data,factor_data=self.factor_data[factor],freq=self.freq,winzorize=self._winzorize,standardize=self._standardize,industry_neutralize=self._industry_neutralize),universe=(group_df==group).astype(np.int), **kwargs)
+            ics['total'] = ic_analysis(FactorEvaluation(bar_data=self.bar_data,factor_data=self.factor_data[factor],freq=self.freq,winzorize=self._winzorize,standardize=self._standardize,industry_neutralize=self._industry_neutralize),**kwargs)
+            ics = pd.concat(ics)
+            # ics = ics.reindex(['total'] + ['low','moderate_low','medium','moderate_high','high'],axis=1)
+            return ics
+        res = {}
+        res['ep groups'] = get_ep_liq_group_ic(factor,**kwargs)
+        # 不同ep组别ic均值输出
+    
+        # bar2 = px.bar(t[t.index.get_level_values(2)=='ic.mean'].droplevel(2).unstack().droplevel(0,axis=1),barmode='group',title=f'avg.ic of different ep groups of {factor}')
+        # # HTML(bar2.to_html())
+        # # bar2.show()
+        
+        # 不同liquidity组别ic均值输出
+        res['liquidity groups'] = get_ep_liq_group_ic(factor,group_df=liquidity_group,**kwargs)
+        # bar3 = px.bar(t[t.index.get_level_values(2)=='ic.mean'].droplevel(2).unstack().droplevel(0,axis=1),barmode='group',title=f'avg.ic of different liquidity groups of {factor}')
+        # # HTML(bar3.to_html())
+        # bar3.show()
+
+        return round(pd.concat(res).unstack().droplevel(0,axis=1),4)
+
+
+
+    def factor_ana_(self,factor,ep_group,liquidity_group,**kwargs):
+        """获取不同组别factor的"""
+        def get_ep_liq_group_ic(factor,group_df=ep_group,**kwargs):
+            ics = {}
+            group_set = ['low','medium','high']#set(group_df.values)
+            for group in group_set:
+                ics[group] = ic_analysis(FactorEvaluation(bar_data=self.bar_data,factor_data=self.factor_data[group_df==group][factor],freq=self.freq,winzorize=self._winzorize,standardize=self._standardize,industry_neutralize=self._industry_neutralize), **kwargs)
+            ics['total'] = ic_analysis(FactorEvaluation(bar_data=self.bar_data,factor_data=self.factor_data[factor],freq=self.freq,winzorize=self._winzorize,standardize=self._standardize,industry_neutralize=self._industry_neutralize), **kwargs)
             ics = pd.concat(ics)
             # ics = ics.reindex(['total'] + ['low','moderate_low','medium','moderate_high','high'],axis=1)
             return ics
@@ -543,7 +583,7 @@ class FactorEvaluation:
 
 
 def summary_plot(report):
-
+    """汇总的可视化输出"""
     
     fig_ic_decay = px.bar(report['ic_decay'].mean(),title='ic decay')
     fig_ic_decay.show()
@@ -590,13 +630,13 @@ def summary_plot(report):
 
 
     
-def ic_analysis(fe,**kwargs):
+def ic_analysis(fe,universe=None,**kwargs):
     """
     fe: 自建类FactorEvaluation
     """
     def _ic_analysis(fe,**kwargs):
-        ic_df = fe.get_factor_ics(method='normal',**kwargs)
-        rankic_df = fe.get_factor_ics(method='rank',**kwargs)
+        ic_df = fe.get_factor_ics(method='normal',universe=universe,**kwargs)
+        # rankic_df = fe.get_factor_ics(method='rank',**kwargs)
         result_df = pd.DataFrame(columns = ic_df.columns)
         result_df.loc['ic.mean'] = ic_df.mean()
         # result_df.loc['ic.ir'] = ic_df.mean() /  ic_df.std()

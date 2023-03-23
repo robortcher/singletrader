@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from functools import partial
 import logging
-
+from singletrader import __symbol_col__,__date_col__
 
 def xs_correlation(x, y,method='normal'):
     if type(x.index) is not pd.MultiIndex:
@@ -98,14 +98,11 @@ def get_group_returns(factor_data, ret_data, groups=5, holding_period=1, cost=0,
         group_rets_raw = ret_data_raw.groupby(factor_group).apply(lambda x:x.groupby(level=0).mean()).swaplevel(0,1).sort_index()
         group_rets_raw = group_rets_raw.unstack()  
         
-        if group_rets_raw.iloc[:,0].mean() >= group_rets_raw.iloc[:,-1].mean():
-            group_rets['Long-Short'] = group_rets_raw.iloc[:,0] - group_rets_raw.iloc[:,-1]
-            group_rets['Long'] = group_rets_raw.iloc[:,0]
-            group_rets['Short'] = group_rets_raw.iloc[:,-1]
-        else:
-            group_rets['Long-Short'] = group_rets_raw.iloc[:,-1] - group_rets_raw.iloc[:,0 ]
-            group_rets['Long'] = group_rets_raw.iloc[:,-1]
-            group_rets['Short'] = group_rets_raw.iloc[:,0]
+        group_rets['Long-Short'] = group_rets_raw.iloc[:,-1] - group_rets_raw.iloc[:,0]
+        group_rets['Long'] = group_rets_raw.iloc[:,-1]
+        group_rets['Short'] = group_rets_raw.iloc[:,0]
+        group_rets['Short-Long'] =  group_rets_raw.iloc[:,0] - group_rets_raw.iloc[:,-1]
+
         group_rets = group_rets.stack() 
     else:
         return None
@@ -113,12 +110,14 @@ def get_group_returns(factor_data, ret_data, groups=5, holding_period=1, cost=0,
     group_rets.name = factor_data.name
     if return_weight:
         group_weights = factor_group.astype(np.float).groupby(factor_group).apply(lambda x:x.unstack().apply(lambda x:(x+1)/(x+1).sum(),axis=1)).fillna(0)#.stack()
-        if group_rets_raw.iloc[:,0].mean() >= group_rets_raw.iloc[:,-1].mean():
-            Long_weight = group_weights[group_weights.index.get_level_values(0)==0].droplevel(0) 
-            Short_weight = group_weights[group_weights.index.get_level_values(0)==(groups-1)].droplevel(0) 
-        else:
-            Long_weight = group_weights[group_weights.index.get_level_values(0)==(groups-1)].droplevel(0) 
-            Short_weight = group_weights[group_weights.index.get_level_values(0)==0].droplevel(0) 
+        Long_weight = group_weights[group_weights.index.get_level_values(0)==(groups-1)].droplevel(0) 
+        Short_weight = group_weights[group_weights.index.get_level_values(0)==0].droplevel(0) 
+        # if group_rets_raw.iloc[:,0].mean() >= group_rets_raw.iloc[:,-1].mean():
+        #     Long_weight = group_weights[group_weights.index.get_level_values(0)==0].droplevel(0) 
+        #     Short_weight = group_weights[group_weights.index.get_level_values(0)==(groups-1)].droplevel(0) 
+        # else:
+        #     Long_weight = group_weights[group_weights.index.get_level_values(0)==(groups-1)].droplevel(0) 
+        #     Short_weight = group_weights[group_weights.index.get_level_values(0)==0].droplevel(0) 
         Long_weight.name = 'Long'
         Short_weight.name = 'Short'
         Long_weight[factor_data.name] = 'Long'
@@ -362,8 +361,12 @@ def winzorize(factor_data,k=5,method='sigma'):
     k: float or shape(1,2) iterable
     method: str 'sigma','mad','qtile'
     """
-    x = factor_data.droplevel(0)
-    # x = pd.DataFrame(x)
+    def check_and_delete_level(df,delete_level=__date_col__):
+        if isinstance(df.index,pd.MultiIndex):
+            df = df.droplevel(delete_level)
+        return df
+    
+    x = check_and_delete_level(factor_data)
     if method == 'mad':
         med = np.median(x, axis=0)
         mad = np.median(np.abs(x - med), axis=0)
@@ -379,11 +382,23 @@ def winzorize(factor_data,k=5,method='sigma'):
         y = np.where(x >= uplimit, uplimit, np.where(x <=lwlimit, lwlimit, x))
 
     elif method == 'qtile':
-        uplimit = np.quantile(x, q = k[1], axis=0)
-        lwlimit = np.quantile(x, q = k[0], axis=0)
+        if isinstance(k,float):
+            k = (k,1-k)
+        uplimit = np.quantile(x, q = max(k), axis=0)
+        lwlimit = np.quantile(x, q = min(k), axis=0)
         y = np.where(x >= uplimit, uplimit, np.where(x <=lwlimit, lwlimit, x))
     
-    y = pd.DataFrame(y, index = x.index, columns = x.columns)
+    elif method == 'qtile-median':
+        if isinstance(k,float):
+            k = (k,1-k)
+        
+        uplimit = np.quantile(x.dropna(), q = max(k), axis=0)
+        lwlimit = np.quantile(x.dropna(), q = min(k), axis=0)
+        y = np.where(x >= uplimit, x.median(), np.where(x <=lwlimit, x.median(), x))
+    if isinstance(x,pd.Series):
+        y = pd.Series(y,index=x.index,name=x.name)
+    elif isinstance(x,pd.DataFrame):
+        y = pd.DataFrame(y, index=x.index, columns=x.columns)
     return y
 
 def xs_qcut(data, n=5, max_loss=0.2):
