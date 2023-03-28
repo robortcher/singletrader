@@ -144,6 +144,7 @@ class FactorEvaluation:
 
         if universe is not None:
             next_return = next_return.stack()
+            next_return = next_return.reindex(universe.index)
             next_return[universe<=0] = np.nan
             next_return = next_return.unstack()
         if neutralize:
@@ -265,7 +266,7 @@ class FactorEvaluation:
         pass
 
 
-    def get_factor_ic(self,next_n=1,factor_list=None,base='open',method='normal',start_date=None,end_date=None,add_shift=1,excess_return=False,universe=None,total=True):
+    def get_event_ic(self,next_n=1,factor_list=None,base='open',is_event=False,method='normal',start_date=None,end_date=None,add_shift=1,excess_return=False,universe=None,total=True):
         freq_dict = {1:'Y',12:'M'}
         if factor_list is None:
             factor_list = self.all_factors
@@ -278,10 +279,36 @@ class FactorEvaluation:
             factor_data = self.factor_data[factor]
             if universe is not None:
                 factor_data = pd.Series(np.where(universe>0,factor_data,np.nan),index=factor_data.index, name=factor)
-            factor_ics.append(get_factor_ic(factor_data, ret_data, method=method))
+            factor_ics.append(get_factor_ic(factor_data, ret_data, is_event=is_event,method=method))
         # logging.info(f"因子{factor}的ic计算完毕")
         factor_ics = pd.concat(factor_ics,axis=1)
         # factor_ics = factor_ics.add_suffix(f"_{next_n}")
+        if start_date is not None:
+            factor_ics = factor_ics[start_date:]
+        if end_date is not None:
+            factor_ics = factor_ics[:end_date]
+        self.factor_ics = factor_ics
+        return factor_ics 
+
+    def get_factor_ic(self,next_n=1,factor_list=None,base='open',is_event=False,method='normal',start_date=None,end_date=None,add_shift=1,excess_return=False,universe=None,total=True):
+        freq_dict = {1:'Y',12:'M'}
+        if factor_list is None:
+            factor_list = self.all_factors
+        ret_data = self.get_next_return(next_n=next_n, excess_return=excess_return,base=base,add_shift=add_shift,total=total)
+        if universe is not None:
+            universe = universe.reindex(self.factor_data.index)
+        factor_ics = []
+        # logging.info(f"正在计算因子{factor}的ic...")
+        for factor in factor_list:
+            factor_data = self.factor_data[factor]
+            if universe is not None:
+                factor_data = pd.Series(np.where(universe>0,factor_data,np.nan),index=factor_data.index, name=factor)
+            factor_ics.append(get_factor_ic(factor_data, ret_data, is_event=is_event,method=method))
+        # logging.info(f"因子{factor}的ic计算完毕")
+        factor_ics = pd.concat(factor_ics,axis=1)
+        # factor_ics = factor_ics.add_suffix(f"_{next_n}")
+        if is_event:
+            return factor_ics
         if start_date is not None:
             factor_ics = factor_ics[start_date:]
         if end_date is not None:
@@ -309,9 +336,12 @@ class FactorEvaluation:
         # all_columns = [i[0]+'_'+str(i[1])+'D' for i in all_columns]
         res = []
         for i in periods:
-            df = self.get_factor_ic(next_n=i,universe=universe,**kwargs)
-            df = df.add_suffix(f'_L{i}')
-            res.append(df)
+            try:
+                df = self.get_factor_ic(next_n=i,universe=universe,**kwargs)
+                df = df.add_suffix(f'_L{i}')
+                res.append(df)
+            except:
+                pass
         res = pd.concat(res,axis=1).dropna(how='all')
         # res = res.reindex(all_columns,axis=1)
         return res
@@ -461,47 +491,61 @@ class FactorEvaluation:
                                 excess_return=False,
                                 start_date=None,
                                 end_date=None,
-                                universe=None
+                                universe=None,
+                                is_event=False
                                 ):
         
         factor_list=[factor]
         periods = list(range(ic_lags[0],ic_lags[1]))
 
+        if is_event:
+            # mean return decay
+            ics_decay = self.get_factor_ics(periods=periods, factor_list=factor_list, base=base,add_shift=add_shift,total=total,start_date=start_date,end_date=end_date,universe=universe,is_event=is_event)
+            ics_decay  = ics_decay.unstack().reset_index()
+            ics_decay.columns = ['lags','set','mean_ret']
+            # Occurrence rate
 
-        # get ic decay
-        ic_series = self.get_factor_ic(add_shift=add_shift,base=base,factor_list=factor_list,start_date=start_date,end_date=end_date,universe=universe)
+            # occurrence_rate = self.factor_data[factor_list].groupby(level=0).apply(lambda x:x['excess_3std'].groupby(x['excess_3std']).count())
+            occurrence_rate  = self.factor_data[factor_list].groupby(level=0).apply(lambda x:x[factor_list[0]].groupby(x[factor_list[0]]).count()/x.__len__()).unstack().fillna(0)
+            result = {}
+            result['mean_return_decay'] = ics_decay
+            result['oc_rate'] = occurrence_rate.describe()
+            return result
+        else:
+            # get ic series
+            ic_series = self.get_factor_ic(add_shift=add_shift,base=base,factor_list=factor_list,start_date=start_date,end_date=end_date,universe=universe,is_event=is_event)
         
-        # ic series
-        ics_decay = self.get_factor_ics(periods=periods, factor_list=factor_list, base=base,add_shift=add_shift,total=total,start_date=start_date,end_date=end_date,universe=universe)
+            # ic decay
+            ics_decay = self.get_factor_ics(periods=periods, factor_list=factor_list, base=base,add_shift=add_shift,total=total,start_date=start_date,end_date=end_date,universe=universe,is_event=is_event)
 
         
-        # get group exccess return performance
-        group_returns,group_weights,group_turnover = self.get_group_returns(holding_period=holding_period,universe=universe,start_date=start_date,end_date=end_date,excess_return=excess_return,factor_list=factor_list,base=base,add_shift=add_shift,groups=groups,return_weight=True)
-        group_returns = group_returns[factor].unstack()
+            # get group exccess return performance
+            group_returns,group_weights,group_turnover = self.get_group_returns(holding_period=holding_period,universe=universe,start_date=start_date,end_date=end_date,excess_return=excess_return,factor_list=factor_list,base=base,add_shift=add_shift,groups=groups,return_weight=True)
+            group_returns = group_returns[factor].unstack()
         
 
-        #过滤掉Long-Short
-        group_returns = group_returns.drop(['Long','Short'],axis=1)
+            #过滤掉Long-Short
+            group_returns = group_returns.drop(['Long','Short'],axis=1)
 
-        group_nvs = (group_returns+1).cumprod()
-        group_nvs = group_nvs/group_nvs.iloc[0]
-        group_nvs.name = 'holding_period=' + str(holding_period)
+            group_nvs = (group_returns+1).cumprod()
+            group_nvs = group_nvs/group_nvs.iloc[0]
+            group_nvs.name = 'holding_period=' + str(holding_period)
 
-        group_turnover = group_turnover[factor].mean() / 2
-        perfs = performance_indicator(group_nvs,ret_data=True,language='en',freq=self.freq)
-        perfs.loc['turnover_ratio'] = group_turnover
+            group_turnover = group_turnover[factor].mean() / 2
+            perfs = performance_indicator(group_nvs,ret_data=True,language='en',freq=self.freq)
+            perfs.loc['turnover_ratio'] = group_turnover
 
 
-        result = {}
-        result['ic_decay'] = ics_decay
-        result['ic_series'] = ic_series.iloc[:,0]
-        result['group_nvs'] = group_nvs
-        result['ann_ret'] = perfs.loc['ret_ann']
-        result['SR'] = perfs.loc['SR']
-        result['TO'] = perfs.loc['turnover_ratio']
+            result = {}
+            result['ic_decay'] = ics_decay
+            result['ic_series'] = ic_series.iloc[:,0]
+            result['group_nvs'] = group_nvs
+            result['ann_ret'] = perfs.loc['ret_ann']
+            result['SR'] = perfs.loc['SR']
+            result['TO'] = perfs.loc['turnover_ratio']
 
-        result['excess_performance'] = round(perfs,4)
-        # self.factor_data = self.raw_factor_data.copy()
+            result['excess_performance'] = round(perfs,4)
+            # self.factor_data = self.raw_factor_data.copy()
         return result
 
     def performance_summary(self,holding_period,start_date,end_date,excess_return,base,add_shift,groups,factor_list=None,universe=None):
@@ -552,8 +596,6 @@ class FactorEvaluation:
 
         return round(pd.concat(res).unstack().droplevel(0,axis=1),4)
 
-
-
     def factor_ana_(self,factor,ep_group,liquidity_group,**kwargs):
         """获取不同组别factor的"""
         def get_ep_liq_group_ic(factor,group_df=ep_group,**kwargs):
@@ -580,6 +622,7 @@ class FactorEvaluation:
         # bar3.show()
 
         return round(pd.concat(res).unstack().droplevel(0,axis=1),4)
+
 
 
 def summary_plot(report):

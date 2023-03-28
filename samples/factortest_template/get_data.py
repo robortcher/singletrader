@@ -8,7 +8,8 @@ import os
 from singletrader.processors.cs_processor import CsWinzorize
 
 cs_win = CsWinzorize(k=0.05,method='qtile-median')
-data_path = r'D:\projects\singletrader_pro\samples\factortest_template\data\temp_data_add.pkl'
+data_path = r'D:\projects\singletrader_pro\samples\factortest_template\data\temp_data_from05.pkl'
+daily_data_path = r'D:\projects\singletrader_pro\samples\factortest_template\data\temp_data_from05_daily.pkl'
 
 
 fields = []
@@ -26,7 +27,7 @@ def get_data():
   
     else:
         
-        mf = MultiFactor(field=fields,name=names,start_date='2009-01-01',end_date='2022-12-31')
+        mf = MultiFactor(field=fields,name=names,start_date='2005-01-01',end_date='2022-12-31')
         raw_data = mf._data
         # skew
         skew = raw_data.groupby('code').apply(lambda x:x['close'].droplevel('code').pct_change().resample('M').apply(lambda x:x.skew()))

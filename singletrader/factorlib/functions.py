@@ -135,7 +135,7 @@ def get_group_returns(factor_data, ret_data, groups=5, holding_period=1, cost=0,
 
 
 
-def get_factor_ic(factor_data, ret_data, method='normal'):
+def get_factor_ic(factor_data, ret_data, is_event=False,method='normal'):
     """
     获取因子收益
     """
@@ -152,10 +152,20 @@ def get_factor_ic(factor_data, ret_data, method='normal'):
     # if method == 'rank':
     #     factor_data = factor_data.groupby(level=0).rank()
     #     ret_data = ret_data.groupby(level=0).rank()
+    if is_event:
+        long_value = factor_data.max()
+        short_value = factor_data.min()
+        mean_ret_long = ret_data.reindex(factor_data.index)[factor_data==long_value].mean()
+        mean_ret_short = ret_data.reindex(factor_data.index)[factor_data==short_value].mean()
+        ic_df = pd.Series([mean_ret_long,mean_ret_short],index = ['long','short'])
+        ic_df.name = factor_data.name
+        return ic_df
+        
+    else:
+        ic_df = xs_correlation(factor_data, ret_data,method=method)
+        ic_df.name = factor_data.name
     
-    ic_df = xs_correlation(factor_data, ret_data,method=method)
-    ic_df.name = factor_data.name
-    return ic_df
+        return ic_df
 
 
 def industry_neutralize(factor_data, ind_info=None, name='sw_l1'):
