@@ -20,7 +20,7 @@ class FactorEvaluation:
     """
     因子组合构建
     """
-    def __init__(self, bar_data, factor_data,freq=252,winzorize=True,standardize=True,industry_neutralize=False):
+    def __init__(self, bar_data, factor_data,freq=252,winzorize=False,standardize=False,industry_neutralize=False):
         bar_data = pd.DataFrame(bar_data)
         factor_data = pd.DataFrame(factor_data)
         self.bar_data = bar_data
@@ -537,6 +537,8 @@ class FactorEvaluation:
 
 
             result = {}
+            result['group_return_short'] = group_returns[0]
+            result['group_return_long'] = group_returns[groups-1]
             result['ic_decay'] = ics_decay
             result['ic_series'] = ic_series.iloc[:,0]
             result['group_nvs'] = group_nvs
@@ -631,7 +633,7 @@ def summary_plot(report):
     fig_ic_decay = px.bar(report['ic_decay'].mean(),title='ic decay')
     fig_ic_decay.show()
 
-
+    # ic-series
     ic_series = report['ic_series']
     ic_series_ma = ic_series.rolling(12).mean()
     fig_ic_series = make_subplots()
@@ -645,27 +647,59 @@ def summary_plot(report):
     fig_ic_series.update_layout(title='ic series')
     fig_ic_series.show()
 
+
+    # 分组净值
     group_nvs = report['group_nvs']
     fig_group_nvs = px.line(group_nvs-1)
     fig_group_nvs.update_layout(title='cumulative excess return(compound) of different groups' + '-' + group_nvs.name)
     fig_group_nvs.show()
 
+    # 多头收益
+    group_return_long = report['group_return_long']
+    group_return_long_ma = group_return_long.rolling(12).mean()
+    fig_group_return_long = make_subplots()
+    index = group_return_long_ma.index
+    fig_group_return_long.add_trace(
+        go.Scatter(x=index ,y=group_return_long_ma.values.tolist(),name='return_ma12')
+    )
+    fig_group_return_long.add_trace(
+        go.Bar(x=index, y=group_return_long.values.tolist(), name="return")
+    )
+    fig_group_return_long.update_layout(title='long set return')
+    fig_group_return_long.show()
+
+
+    # 空头收益
+    group_return_short = report['group_return_short']
+    group_return_short_ma = group_return_short.rolling(12).mean()
+    fig_group_return_short = make_subplots()
+    index = group_return_short_ma.index
+    fig_group_return_short.add_trace(
+        go.Scatter(x=index ,y=group_return_short_ma.values.tolist(),name='return_ma12')
+    )
+    fig_group_return_short.add_trace(
+        go.Bar(x=index, y=group_return_short.values.tolist(), name="return")
+    )
+    fig_group_return_short.update_layout(title='short set return')
+    fig_group_return_short.show()
+
+    # 分组年化收益
     ann_ret = report['ann_ret']
     fig_ann_ret = px.bar(ann_ret,title='ann_ret')
     fig_ann_ret.show()
 
-
+    # 分组夏普
     SR = report['SR']
     fig_SR = px.bar(SR,title='SR')
     fig_SR.show()
 
-
+    # 分组换手
     TO = report['TO']
     fig_TO = px.bar(TO,title='TO')
     fig_TO.show()
 
 
-
+    # 分组评估指标
     perfs = report['excess_performance']
     table_perfs = create_table(perfs.reset_index())
     table_perfs.show()

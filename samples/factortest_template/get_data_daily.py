@@ -28,8 +28,11 @@ def get_data():
   
     else:
         # 价格偏移n-std
-        fields += ['($close - Sum($close,250)/250) / Std($close,250)']
+        fields += ['($close/Ref($close,1)-1) / Std(($close/Ref($close,1)-1),250)']
         names += ['n_std']
+
+        fields += ['($close/Ref($close,1)-1)']
+        names += ['daily_return']
 
         fields += ['Med($money,60)']
         names += ['amount60D']
@@ -40,6 +43,9 @@ def get_data():
         raw_data = mf._data
         raw_data['excess_3std'] = np.where(raw_data['n_std']>=3,1,0)
         raw_data['excess_3std'] = np.where(raw_data['n_std']<=-3,-1,raw_data['excess_3std'])
+        
+        raw_data['return_exceed_0.098'] = np.where(raw_data['daily_return']>=0.098,1,0)
+        raw_data['return_exceed_0.098'] = np.where(raw_data['daily_return']<=-0.098,-1,raw_data['return_exceed_0.098'])
         save_pkl(raw_data[raw_data.index.get_level_values(0)>='2006'],data_path)
         
 if __name__ == '__main__':

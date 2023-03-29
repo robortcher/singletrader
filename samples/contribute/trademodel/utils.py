@@ -1,7 +1,7 @@
 import math
 def get_period_split(start_year = 2010,
     min_train_year = 5,
-    fix_train_year = None,
+    fix_train_year = 5,
     valid_period = 2,
     end_year = 2023,
     round_period = 1,

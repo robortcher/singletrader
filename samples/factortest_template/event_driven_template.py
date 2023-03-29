@@ -24,6 +24,6 @@ print('high liquidity set\n',high_liq.head())
 
 fe = FactorEvaluation(bar_data=data[bars],factor_data=data[features],winzorize=False,standardize=False,industry_neutralize=False)
 
-factor = 'excess_3std'
-report = fe.get_factor_detail_report(factor=factor,universe=high_liq,add_shift=1,base='close',is_event=True,start_date='2006-01-01',end_date='2022-12-31',total=False,excess_return=True,holding_period=1)
+factor = 'n_std'
+report = fe.get_factor_detail_report(factor=factor,universe=high_liq,add_shift=1,base='close',start_date='2006-01-01',end_date='2022-12-31',total=False,excess_return=True,holding_period=1)
 print('paused')

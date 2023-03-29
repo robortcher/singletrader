@@ -1,0 +1,9 @@
+|-model_project
+    |-project-1
+        |-data
+        |-model
+        |-train.py
+        |-backtesting.py
+        |-livingtrading.py
+    |-project-2
+        |-...

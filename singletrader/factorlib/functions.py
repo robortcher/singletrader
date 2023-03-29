@@ -162,9 +162,11 @@ def get_factor_ic(factor_data, ret_data, is_event=False,method='normal'):
         return ic_df
         
     else:
-        ic_df = xs_correlation(factor_data, ret_data,method=method)
-        ic_df.name = factor_data.name
-    
+        if isinstance(factor_data,pd.Series):
+            ic_df = xs_correlation(factor_data, ret_data,method=method)
+            ic_df.name = factor_data.name
+        if isinstance(factor_data,pd.DataFrame):
+            print("error")
         return ic_df
 
 
@@ -172,8 +174,8 @@ def industry_neutralize(factor_data, ind_info=None, name='sw_l1'):
     """
     行业中性化处理
     """
-    
-    if factor_data.index[0].__len__()==2:
+    if isinstance(factor_data.index,pd.MultiIndex):
+    # if factor_data.index[0].__len__()==2:
         factor_data = factor_data.droplevel(0)
     if ind_info is None:
         from  singletrader.constant import Ind_info

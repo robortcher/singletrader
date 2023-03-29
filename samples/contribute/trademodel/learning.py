@@ -12,7 +12,7 @@ from samples.contribute.data.models import LinearModel
 import pandas as pd
 
 start = '2010-01-01'
-end = '2023-01-31'
+end = '2023-03-31'
 
 
 LINREG = {
@@ -71,8 +71,8 @@ if __name__ == '__main__':
     compare_result = {}
     pred_lins = []
     pred_lgbs = []
-    for i in range(len(train)):
-
+    # for i in range(len(train)):
+    for i in (5,):
         model_lin = init_instance_by_config(LINREG)
         model_lgb = init_instance_by_config(GBDT_MODEL)
         dataset = init_instance_by_config(get_dataset_config(

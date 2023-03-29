@@ -12,6 +12,11 @@ import functools
 import os
 CORE_NUM = cpu_count()
 
+def check_and_mkdir(path):
+    # logger.info("开始初始化路径...")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
 def load_pkl(filename):
     """载入pickle文件"""
     with open(filename, 'rb') as f:

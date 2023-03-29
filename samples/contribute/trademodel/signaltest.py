@@ -1,6 +1,6 @@
-from singletrader.datasdk.qlibapi.constructor.base import MultiFactor
+from singletrader.datasdk.qlib.base import MultiFactor
 from singletrader.shared.utility import load_pkls,load_pkl
-from singletrader.factortesting.factor_testing import FactorEvaluation
+from singletrader.factorlib.factortesting import FactorEvaluation
 from singletrader.performance.common import performance_indicator
 from configs import basic_config
 from singletrader.constant import CONST
@@ -8,7 +8,13 @@ import pandas as pd
 import jqdatasdk as jq
 import numpy as np
 import datetime
-from singletrader.factortesting.factor_formulas import industry_neutralize
+from singletrader.factorlib.functions import industry_neutralize
+
+import os
+
+jq_user = os.environ.get('JQ_USER')
+jq_passwd = os.environ.get('JQ_PASSWD')
+jq.auth(jq_user,jq_passwd)
 
 time = datetime.datetime.now().strftime('%H:%M:%S')
 
@@ -27,11 +33,11 @@ if __name__ == '__main__':
     
 
 
-    model =load_pkl(r'D:\projects\singletrader\samples\contribute\trademodel\models\2023.pkl')
+    model =load_pkl(r'D:\projects\singletrader_pro\samples\contribute\trademodel\models\2023.pkl')
     mf = MultiFactor(field=field,name=name,start_date=last_trade_date,end_date=last_trade_date)
     data=mf._data
     
-    pred = pd.Series(model.model.predict(data),index=data.index).droplevel(1)
+    pred = pd.Series(model.model.predict(data),index=data.index).droplevel(0)
   
     pred = industry_neutralize(pred)
     all_security_info = jq.get_all_securities()
@@ -50,12 +56,3 @@ if __name__ == '__main__':
     
     
     
-
-
-    
-    all_signal  = load_pkls(r'D:\projects\singletrader\samples\contribute\trademodel\predict')
-    fe = FactorEvaluation(bar_data=data.swaplevel(0,1),factor_data=all_signal)
-
-
-
-    print('===')

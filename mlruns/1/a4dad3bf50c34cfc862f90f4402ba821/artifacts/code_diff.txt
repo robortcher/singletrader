@@ -1,0 +1,95 @@
+diff --git a/samples/contribute/trademodel/learning.py b/samples/contribute/trademodel/learning.py
+index 1c8674e..2832825 100644
+--- a/samples/contribute/trademodel/learning.py
++++ b/samples/contribute/trademodel/learning.py
+@@ -12,7 +12,7 @@ from samples.contribute.data.models import LinearModel
+ import pandas as pd
+ 
+ start = '2010-01-01'
+-end = '2023-01-31'
++end = '2023-03-31'
+ 
+ 
+ LINREG = {
+@@ -71,8 +71,8 @@ if __name__ == '__main__':
+     compare_result = {}
+     pred_lins = []
+     pred_lgbs = []
+-    for i in range(len(train)):
+-
++    # for i in range(len(train)):
++    for i in (5,):
+         model_lin = init_instance_by_config(LINREG)
+         model_lgb = init_instance_by_config(GBDT_MODEL)
+         dataset = init_instance_by_config(get_dataset_config(
+diff --git a/samples/contribute/trademodel/signaltest.py b/samples/contribute/trademodel/signaltest.py
+index 574ef05..7f31715 100644
+--- a/samples/contribute/trademodel/signaltest.py
++++ b/samples/contribute/trademodel/signaltest.py
+@@ -1,6 +1,6 @@
+-from singletrader.datasdk.qlibapi.constructor.base import MultiFactor
++from singletrader.datasdk.qlib.base import MultiFactor
+ from singletrader.shared.utility import load_pkls,load_pkl
+-from singletrader.factortesting.factor_testing import FactorEvaluation
++from singletrader.factorlib.factortesting import FactorEvaluation
+ from singletrader.performance.common import performance_indicator
+ from configs import basic_config
+ from singletrader.constant import CONST
+@@ -8,7 +8,13 @@ import pandas as pd
+ import jqdatasdk as jq
+ import numpy as np
+ import datetime
+-from singletrader.factortesting.factor_formulas import industry_neutralize
++from singletrader.factorlib.functions import industry_neutralize
++
++import os
++
++jq_user = os.environ.get('JQ_USER')
++jq_passwd = os.environ.get('JQ_PASSWD')
++jq.auth(jq_user,jq_passwd)
+ 
+ time = datetime.datetime.now().strftime('%H:%M:%S')
+ 
+@@ -27,11 +33,11 @@ if __name__ == '__main__':
+     
+ 
+ 
+-    model =load_pkl(r'D:\projects\singletrader\samples\contribute\trademodel\models\2023.pkl')
++    model =load_pkl(r'D:\projects\singletrader_pro\samples\contribute\trademodel\models\2023.pkl')
+     mf = MultiFactor(field=field,name=name,start_date=last_trade_date,end_date=last_trade_date)
+     data=mf._data
+     
+-    pred = pd.Series(model.model.predict(data),index=data.index).droplevel(1)
++    pred = pd.Series(model.model.predict(data),index=data.index).droplevel(0)
+   
+     pred = industry_neutralize(pred)
+     all_security_info = jq.get_all_securities()
+@@ -50,12 +56,3 @@ if __name__ == '__main__':
+     
+     
+     
+-
+-
+-    
+-    all_signal  = load_pkls(r'D:\projects\singletrader\samples\contribute\trademodel\predict')
+-    fe = FactorEvaluation(bar_data=data.swaplevel(0,1),factor_data=all_signal)
+-
+-
+-
+-    print('===')
+\ No newline at end of file
+diff --git a/singletrader/factorlib/functions.py b/singletrader/factorlib/functions.py
+index 0abfaaa..796bcd4 100644
+--- a/singletrader/factorlib/functions.py
++++ b/singletrader/factorlib/functions.py
+@@ -172,8 +172,8 @@ def industry_neutralize(factor_data, ind_info=None, name='sw_l1'):
+     """
+     行业中性化处理
+     """
+-    
+-    if factor_data.index[0].__len__()==2:
++    if isinstance(factor_data.index,pd.MultiIndex):
++    # if factor_data.index[0].__len__()==2:
+         factor_data = factor_data.droplevel(0)
+     if ind_info is None:
+         from  singletrader.constant import Ind_info
