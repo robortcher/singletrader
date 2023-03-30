@@ -21,7 +21,7 @@ import logging
 class DataSaver():
     def __init__(self,start_date=None,end_date=None,trade_date=None,mode='all',func=None):
         
-        assert mode in ('all','mode'), logging.error(f"不支持的下载模式{mode},请选择split或者all")
+        assert mode in ('all','split'), logging.error(f"不支持的下载模式{mode},请选择split或者all")
         
         if trade_date is not None:
             mode='all'
