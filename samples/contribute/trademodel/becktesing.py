@@ -5,7 +5,7 @@ from singletrader.backtesting.strategy import BaseStrategy
 from singletrader.backtesting.account import Account
 from singletrader.performance.common import performance_indicator 
 
-singnals = load_pkls(r'D:\projects\singletrader_pro\samples\contribute\trademodel\predict')
+singnals = load_pkls(r'D:\projects\singletrader_pro\samples\contribute\trademodel\predict500')
 
 
 class SingnalFactor(BaseStrategy):
@@ -65,7 +65,7 @@ for s in ['2018-01-02','2018-01-03','2018-01-04','2018-01-05','2018-01-08']:
         trade_free = False,
         price_type = 'close',
         slippage = 0.,
-        slippage_ratio = 0.0015,
+        slippage_ratio = 0.00,
         tax_buy = 0.,
         tax_sell = 0.00,
         region='cn',

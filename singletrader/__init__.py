@@ -28,14 +28,14 @@ def init():
         check_and_mkdir(QLIB_BIN_DATA_PATH)
         check_and_mkdir(IND_PATH)
         
-        try:
-            import qlib
-            qlib.init(provider_uri=QLIB_BIN_DATA_PATH)
-        except ImportError:
-            logger.error("please install pyqib")
-        
-        logger.info(f"路径初始化完毕。初始化路径为{QLIB_BIN_DATA_PATH}")
-        os.environ['singletrader.init'] = '1'
+    try:
+        import qlib
+        qlib.init(provider_uri=QLIB_BIN_DATA_PATH)
+    except ImportError:
+        logger.error("please install pyqib")
+    
+    logger.info(f"路径初始化完毕。初始化路径为{QLIB_BIN_DATA_PATH}")
+    os.environ['singletrader.init'] = '1'
 
         
 init()

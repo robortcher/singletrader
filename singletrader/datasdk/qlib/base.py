@@ -9,7 +9,8 @@ import qlib
 from collections import OrderedDict
 import datetime
 import pandas as pd
-from singletrader import __date_col__,__symbol_col__
+from singletrader import __date_col__,__symbol_col__,init
+# init()
 
 
 __all__ = ['BaseFactor','FormatFactor','SigleFactor','MultiFactor','F', 'ModelFactor']

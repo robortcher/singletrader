@@ -1,0 +1,15 @@
+artifact_uri: file:D:\projects\singletrader_pro\mlruns/1/c2a6ee23d1284f00b98325e63f99e7d8/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '1'
+lifecycle_stage: active
+run_id: c2a6ee23d1284f00b98325e63f99e7d8
+run_name: mlflow_recorder
+run_uuid: c2a6ee23d1284f00b98325e63f99e7d8
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1680248666224
+status: 1
+tags: []
+user_id: simon

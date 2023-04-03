@@ -3,7 +3,7 @@ from .normal_processor import winzorize,_add_cs_data,standardize
 from abc import abstractmethod
 import pandas as pd
 from singletrader import __symbol_col__ ,__date_col__
-
+from singletrader.processors.operator import get_beta
 
 class CsProcessor():
     """截面处理器"""
@@ -20,6 +20,43 @@ class CsProcessor():
     @property
     def func(self):
         pass
+
+
+class CsNeutrualize(CsProcessor):
+    def __init__(self, CN=True, SN=True):
+        self.CN = True # 是否进行市值中性化
+        self.SN = True # 是否进行行业中性化
+        self.explain_data = None # 是否加载过数据
+    def __call__(self, df,**kwargs):
+        return self.func(data=df,**kwargs)
+    
+    def func(self,data,**kwargs):
+        from singletrader.datasdk.qlib.base import MultiFactor
+        from singletrader.constant import Ind_info
+        
+        # 时间戳判断和处理
+        start_date = data.index.get_level_values(__date_col__).min()
+        end_date = data.index.get_level_values(__date_col__).max()
+        if hasattr(start_date,'strftime'):
+            start_date = start_date.strftime("%Y-%m-%d")
+            end_date = end_date.strftime("%Y-%m-%d")
+        
+        if self.explain_data is not None:
+            explain_data = self.explain_data
+        else:
+            explain_data = pd.DataFrame()
+            if self.CN:
+                explain_data = pd.concat([explain_data,MultiFactor(field=['Log($circulating_market_cap)'],name = ['market_cap'],start_date=start_date,end_date=end_date)._data],axis=1)
+                explain_data.index = explain_data.index.set_names([__date_col__,__symbol_col__])
+            if self.SN:    
+                explain_data = _add_cs_data(explain_data,pd.get_dummies(Ind_info))
+                explain_data.index = explain_data.index.set_names([__date_col__,__symbol_col__])
+            self.explain_data = explain_data
+
+
+        XY_data = pd.concat([data,explain_data],axis=1)
+        resid_data = XY_data.groupby(level=__date_col__).apply(lambda x:get_beta(x,value='resid'))
+        return resid_data
 
 
 class CsWinzorize(CsProcessor):

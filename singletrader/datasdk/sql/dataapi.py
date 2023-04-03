@@ -186,6 +186,7 @@ get_price.all_factors = ['open', 'close', 'high', 'low', 'volume', 'money', 'avg
 
 get_acution = BaseSqlApi(db_config=AuctionConfigPG)
 
+get_index_cons = BaseSqlApi(db_config=IndexCons)
 
 get_income = BaseSqlApi(db_config=IncomeConfig)
 get_balance = BaseSqlApi(db_config=BalanceConfig)
@@ -193,6 +194,7 @@ get_cash_flow = BaseSqlApi(db_config=CashflowConfig)
 
 
 if __name__ == '__main__':
+    d0 = get_index_cons(start_date='2005-01-01')
     d1 = get_income()
     d2 = get_balance()
     d3 = get_cash_flow()

@@ -442,6 +442,7 @@ class FactorEvaluation:
                     add_shift=1,
                     total=True,
                     universe=None,
+                    cost=0,
                     ):
         """
         self: 自建类FactorEvaluation
@@ -466,7 +467,7 @@ class FactorEvaluation:
 
         # group returns
         # group_returns,group_weights,group_turnover = self.get_group_returns(holding_period=holding_period,start_date=start_date,end_date=end_date,excess_return=excess_return,base=base,add_shift=add_shift,groups=groups,return_weight=True)
-        perfs = self.performance_summary(holding_period=holding_period,start_date=start_date,end_date=end_date,excess_return=excess_return,base=base,add_shift=add_shift,groups=groups,universe=universe)
+        perfs = self.performance_summary(cost=cost,holding_period=holding_period,start_date=start_date,end_date=end_date,excess_return=excess_return,base=base,add_shift=add_shift,groups=groups,universe=universe)
         perfs = pd.concat(perfs)
         return_ann = perfs[perfs.index.get_level_values(1) == 'ret_ann'][['Long','Short','Long-Short']].unstack().T.swaplevel(0,1)
         TO = perfs[perfs.index.get_level_values(1) == 'turnover_ratio'][['Long','Short']].unstack().T.swaplevel(0,1)
@@ -492,7 +493,8 @@ class FactorEvaluation:
                                 start_date=None,
                                 end_date=None,
                                 universe=None,
-                                is_event=False
+                                is_event=False,
+                                cost=0,
                                 ):
         
         factor_list=[factor]
@@ -520,7 +522,7 @@ class FactorEvaluation:
 
         
             # get group exccess return performance
-            group_returns,group_weights,group_turnover = self.get_group_returns(holding_period=holding_period,universe=universe,start_date=start_date,end_date=end_date,excess_return=excess_return,factor_list=factor_list,base=base,add_shift=add_shift,groups=groups,return_weight=True)
+            group_returns,group_weights,group_turnover = self.get_group_returns(holding_period=holding_period,universe=universe,start_date=start_date,cost=cost,end_date=end_date,excess_return=excess_return,factor_list=factor_list,base=base,add_shift=add_shift,groups=groups,return_weight=True)
             group_returns = group_returns[factor].unstack()
         
 
@@ -550,12 +552,12 @@ class FactorEvaluation:
             # self.factor_data = self.raw_factor_data.copy()
         return result
 
-    def performance_summary(self,holding_period,start_date,end_date,excess_return,base,add_shift,groups,factor_list=None,universe=None):
+    def performance_summary(self,cost,holding_period,start_date,end_date,excess_return,base,add_shift,groups,factor_list=None,universe=None):
         all_perfs = {}
         if factor_list is None:
             factor_list = self.all_factors
         for factor in factor_list:     
-            group_returns,group_weights,group_turnover = self.get_group_returns(holding_period=holding_period,start_date=start_date,end_date=end_date,excess_return=excess_return,factor_list=[factor],base=base,universe=universe,add_shift=add_shift,groups=groups,return_weight=True)
+            group_returns,group_weights,group_turnover = self.get_group_returns(cost=cost,holding_period=holding_period,start_date=start_date,end_date=end_date,excess_return=excess_return,factor_list=[factor],base=base,universe=universe,add_shift=add_shift,groups=groups,return_weight=True)
             group_returns = group_returns[factor].unstack()
 
             group_nvs = (group_returns+1).cumprod()

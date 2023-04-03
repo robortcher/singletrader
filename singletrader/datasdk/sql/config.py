@@ -54,3 +54,9 @@ class IncomeConfig(PostgresqlConfig):
 class CashflowConfig(PostgresqlConfig):
     db_name = 'finance'
     table_name = 'cashflow'
+
+class IndexCons(PostgresqlConfig):
+    db_name = 'finance'
+    table_name = 'index_conponents'
+
+

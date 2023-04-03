@@ -14,15 +14,15 @@ except:
 import os
 import json
 from datetime import timedelta
-from .config import ValuationConfigPG,PricePostConfigPG,AuctionConfigPG
+try:
+    from config import ValuationConfigPG,PricePostConfigPG,AuctionConfigPG,PricePostMinuteConfigPG,IndexCons
+except:
+    from .config import ValuationConfigPG,PricePostConfigPG,AuctionConfigPG,PricePostMinuteConfigPG,IndexCons
 
-import logging
 
-class DataSaver():
+
+class DataRetrive():
     def __init__(self,start_date=None,end_date=None,trade_date=None,mode='all',func=None):
-        
-        assert mode in ('all','split'), logging.error(f"不支持的下载模式{mode},请选择split或者all")
-        
         if trade_date is not None:
             mode='all'
             start_date=trade_date
@@ -49,7 +49,7 @@ class DataSaver():
         periods = list(zip(start_dates, end_dates))
         return periods
     
-    def data_writer(self,**kwargs):
+    def datawriter(self,**kwargs):
         start_date=kwargs.get('start_date',self.start_date)
         end_date=kwargs.get('end_date',self.end_date)
         trade_date=kwargs.get('trade_date',self.trade_date)
@@ -65,8 +65,7 @@ class DataSaver():
     #     pass
         
 
-
-def download_valuation(pg=None, start_date='2005-01-01',end_date=None,trade_date=None,is_daily=False):
+def get_valuation(pg=None, start_date='2005-01-01',end_date=None,trade_date=None,is_daily=False):
     """
     daily 更新前一天的数据
     """
@@ -109,7 +108,7 @@ def download_valuation(pg=None, start_date='2005-01-01',end_date=None,trade_date
         else:
             print(df0)
 
-# 复权行情数据
+
 def down_price(pg=None,start_date='2005-01-01',end_date=None,trade_date=None,**kwargs):
     if trade_date is not None:
         start_date = trade_date
@@ -128,8 +127,6 @@ def down_price(pg=None,start_date='2005-01-01',end_date=None,trade_date=None,**k
                         )
     else:
         return df
-
-
 
 def down_price_minute(pg=None,start_date='2005-01-01',end_date=None,trade_date=None,**kwargs):
     if trade_date is not None:
@@ -157,7 +154,7 @@ def down_price_minute(pg=None,start_date='2005-01-01',end_date=None,trade_date=N
 
 
 
-# 集合竞价
+#集合竞价
 def download_auction(pg=None,start_date='2005-01-01',end_date=None,trade_date=None,**kwargs):
     universe = get_all_securities().index.tolist()
     df = get_call_auction(security=universe, start_date=start_date, end_date=end_date).rename(columns={'time':'date','volume':'volume_au',"money":'money_au'})
@@ -177,17 +174,20 @@ def download_auction(pg=None,start_date='2005-01-01',end_date=None,trade_date=No
 
 
 
-#成 分股权重
-def download_index_cons(pg=None,start_date=None,end_date=None):
-
+#成分股权重
+def download_index_cons(pg=None,start_date=None,end_date=None,trade_date=None,**kwargs):
+    index_list = ['000016.XSHG','000300.XSHG','000905.XSHG','000852.XSHG']
+    index_names = ['sz50','hs300','zz500','zz1000']
     days = get_trade_days(start_date=start_date,
                         end_date=end_date, count=None)
     
     for day in days:
-        df = get_index_weights(index_id='000300.XSHG',date=day)
-        df.index.name = 'code'
+        df = pd.concat([get_index_weights(index_id=index,date=day).set_index('date',append=True)['weight'] for index in index_list],axis=1)
+        df.index = df.index.set_names(['code','date'])
+        df.columns = index_names
         df = df.reset_index()
-        text_columns = ['code','display_name']
+        df['date'] = day
+        text_columns = ['code']
         date_columns = ['date']
         constraint_columns = ['date', 'code']
         if pg is not None:
@@ -201,27 +201,10 @@ def download_index_cons(pg=None,start_date=None,end_date=None):
 
 
 def download_index_price(pg=None,start_date=None,end_date=None):
-    index_list = ['000300.XSHG','000016.XSHG','000905.XSHG','000852.XSHG']
-    df =get_price('000300.XSHG', start_date= start_date,end_date=end_date, frequency='daily', fields=['open','close','low','high','volume','money','high_limit','low_limit','avg','pre_close'])
+    index_list = ['000016.XSHG','000300.XSHG','000905.XSHG','000852.XSHG']
+    df = get_price('000300.XSHG', start_date= start_date,end_date=end_date, frequency='daily', fields=['open','close','low','high','volume','money','high_limit','low_limit','avg','pre_close'])
     pass
 
-
-
-def AllWriter(start_date='20005-01-01',end_date=datetime.datetime.now().strftime('%Y-%m-%d')):
-    pg_v = Postgres(conf=ValuationConfigPG)
-    vw = DataSaver(start_date=start_date,end_date=end_date,func=download_valuation)
-    vw.data_writer(pg=pg_v)
-
-    pg_w= Postgres(conf=PricePostConfigPG)
-    pw = DataSaver(start_date=start_date,end_date=end_date,func=down_price,mode='split')
-    pw.data_writer(pg=pg_w)
-    
-    
-
-    pg_au = Postgres(conf=AuctionConfigPG)
-    auw =  DataSaver(start_date=start_date,end_date=end_date,func=download_auction,mode='split')
-    auw.data_writer(pg=pg_au)
-    pass 
 
 
 def UpdateWriter(start_date=None,end_date=None,trade_date=None):
@@ -229,22 +212,29 @@ def UpdateWriter(start_date=None,end_date=None,trade_date=None):
         start_date = trade_date 
         end_date = trade_date 
     
+    # 估值数据
     pg_v = Postgres(conf=ValuationConfigPG)
-    vw = DataSaver(start_date=start_date,end_date=end_date,func=download_valuation)
-    vw.data_writer(pg=pg_v)
+    vw = DataRetrive(start_date=start_date,end_date=end_date,func=get_valuation)
+    vw.datawriter(pg=pg_v)
 
+    # 价格数据
     pg_w= Postgres(conf=PricePostConfigPG)
-    pw = DataSaver(start_date=start_date,end_date=end_date,func=down_price)
-    pw.data_writer(pg=pg_w)
+    pw = DataRetrive(start_date=start_date,end_date=end_date,func=down_price)
+    pw.datawriter(pg=pg_w)
     
     
-
+    # 集合竞价数据
     pg_au = Postgres(conf=AuctionConfigPG)
-    auw =  DataSaver(start_date=start_date,end_date=end_date,func=download_auction)
-    auw.data_writer(pg=pg_au)
+    auw =  DataRetrive(start_date=start_date,end_date=end_date,func=download_auction)
+    auw.datawriter(pg=pg_au)
 
+    # 指数成分数据
+    pg_index = Postgres(conf=IndexCons)
+    indexw = DataRetrive(start_date=start_date,end_date=end_date,func=download_index_cons)
+    indexw.datawriter(pg=pg_index)
 
 if __name__ == '__main__':
+
     import sys
 
 
