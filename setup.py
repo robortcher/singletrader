@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='singletrader',
-    version='0.1.0',
+    version='0.1.1',
     description='a package for backtesting and factor analysis',
     author='Simon X',
     author_email='robortcher@outlook.com',
