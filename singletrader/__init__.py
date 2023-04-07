@@ -32,7 +32,13 @@ def init():
         import qlib
         qlib.init(provider_uri=QLIB_BIN_DATA_PATH)
     except ImportError:
-        logger.error("please install pyqib")
+        logger.error("please install pyqlib first")
+
+    try:
+        import jqdatasdk as jq
+        jq.auth(os.environ['JQ_USER'],os.environ['JQ_PASSWD'])
+    except:
+        logger.error('please install jqdatasdk and auth it first')
     
     logger.info(f"路径初始化完毕。初始化路径为{QLIB_BIN_DATA_PATH}")
     os.environ['singletrader.init'] = '1'

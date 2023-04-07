@@ -11,7 +11,7 @@ class CsProcessor():
         self.kwargs = kwargs
 
     def __call__(self, df):
-        data =  df.groupby(level=__date_col__).apply(self.func)
+        data =  df.groupby(level=__date_col__).apply(lambda x:x.apply(self.func))
         return data
     
 
@@ -20,6 +20,18 @@ class CsProcessor():
     @property
     def func(self):
         pass
+
+class Csqcut(CsProcessor):
+    def __init__(self,q=5):
+        self.q = 5
+        self.labels= list(range(q))
+
+    def __call__(self, df):
+        data =  df.groupby(level=__date_col__).apply(lambda x:x.rank(method='first').apply(self.func))
+        return data
+    @property
+    def func(self):
+        return partial(pd.qcut,labels=self.labels,q=self.q)
 
 
 class CsNeutrualize(CsProcessor):

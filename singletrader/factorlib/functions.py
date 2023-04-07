@@ -2,6 +2,7 @@
 计算因子相关属性的函数包
 """
 import numpy as np
+import qlib
 import pandas as pd
 from functools import partial
 import logging
