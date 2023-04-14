@@ -24,7 +24,7 @@ setup(
     author='Simon X',
     author_email='robortcher@outlook.com',
     packages=find_packages(),
-    install_requires=_process_requirements,
+    install_requires=_process_requirements(),
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
