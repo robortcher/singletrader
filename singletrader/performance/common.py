@@ -46,7 +46,7 @@ def performance_indicator(nvs:pd.DataFrame, method='compound',ret_data=False,ris
 
         if language.lower() == 'en':
             _performance_indicator = {'ret_cum'    : ret_cum,
-                                    'ret_ann'    : ret_ann,
+                                    'AnnRet'    : ret_ann,
                                     'sigma_ann'  : sigma_ann,
                                     'max_drawdown':max_drawdown,
                                     'SR':sharpe_ratio,
@@ -64,7 +64,7 @@ def performance_indicator(nvs:pd.DataFrame, method='compound',ret_data=False,ris
                 _performance_indicator['excess_ann'] = avg_excess_return_ann
                 _performance_indicator['excess_stdev_ann'] = avg_excess_return_stdev_ann
                 _performance_indicator['IR'] = IR
-            _performance_indicator['n_periods'] = str(int(days_number))
+            # _performance_indicator['n_periods'] = str(int(days_number))
         elif language.lower() == 'cn':
             _performance_indicator = {'累计收益':ret_cum,
                             '年化收益':ret_ann,

@@ -1,41 +1,31 @@
 import sys 
 sys.path.append(r'D:/projects/singletrader_pro')
-from singletrader.datasdk.qlib.base import MultiFactor
-import singletrader
-# from singletrader import init
-# init()
-fields = ['$market_cap','1/$pb_ratio', '0.79*1/$pe_ratio+0.21*1/$pcf_ratio']
-names = ['size','bp','ep']
-
-
-
-# prices = [100,3,2,5,10,12,31,44,11,22,5]
-
-# def get_max_profit_one(prices):
-#     min_price = prices[0]
-#     max_pnl = 0 
-#     for _price in prices:
-#         min_price = min(min_price,_price)
-#         max_pnl = max(max_pnl,_price-min_price)
-#     return max_pnl
-
-# def get_max_profit_two(prices):
-#     steps = len(prices)
-#     max_pnl = 0
-#     for i in range(steps-1):
-#         part1 = prices[:i+1]
-#         part2 = prices[i+1:]
-#         max_pnl = max(get_max_profit_one(part1) + get_max_profit_one(part2),max_pnl)
-#     return max_pnl
-    
-    
-    
-
+from singletrader.datasdk.qlib.base import MultiFactor,__bar_fields__,__bar_names__
+from singletrader.factorlib.factortesting import FactorEvaluation
+from singletrader.datasdk.sql.dataapi import get_index_cons
+from singletrader.performance.common import performance_indicator 
 
 if __name__ == '__main__':
-    import jqdatasdk as jq
-    all_secs = jq.get_all_securities().index.tolist()
-    all_sec = all_secs
-    mf = MultiFactor(field=fields,name=names,start_date='2005-01-01',end_date='2022-12-31',instruments=all_sec)
+    fields = ['Sum($money,60)'] + __bar_fields__ + ['$open/Ref($close,1)-1'] 
+    names = ['money60']+__bar_names__ + ['Gap']
+    mf = MultiFactor(field=fields,name=names,start_date='2023-01-01',end_date='2023-04-10')
     d = mf._data
+    import pandas as pd
+    from singletrader.shared.utility import load_pkl,save_pkl
+    """
+
+    to / yc
+    
+    tmo / to
+    
+    """
+    ind_cons = get_index_cons()
+    
+
+    fe = FactorEvaluation(d.iloc[:,:-1],d.iloc[:,-1],winzorize=True,standardize=True,industry_neutralize=True)
+    mm = fe.factor_data.iloc[:,-1]
+    label = mm.groupby(level=0).apply(lambda x:pd.qcut(x.rank(method='first'),10,labels=(0,1,2,3,4,5,6,7,8,9)))
+    save_pkl(mm[label>0],r'D:\projects\singletrader_pro\samples\contribute\trademodel\lgbmodel\predict\gap_signal.pkl')
+    ic = fe.get_factor_ic(add_shift=0,base='close-open')
+    fe.get_factor_ics(periods=(1,2,5,10),add_shift=0,base='open')
     print('=====')

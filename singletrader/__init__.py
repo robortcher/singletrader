@@ -1,6 +1,6 @@
 
 import os
-from .shared.logging import logger
+from .shared.logging import logger,logger_init
 from .constant import *
 
 
@@ -23,7 +23,7 @@ def init():
     if int(os.environ.get('singletrader.init',0)):
         pass 
     else:
-        logger.info("开始初始化路径...")
+        logger_init.info("开始初始化路径...")
         check_and_mkdir(root_dir)
         check_and_mkdir(QLIB_BIN_DATA_PATH)
         check_and_mkdir(IND_PATH)
@@ -32,15 +32,15 @@ def init():
         import qlib
         qlib.init(provider_uri=QLIB_BIN_DATA_PATH)
     except ImportError:
-        logger.error("please install pyqlib first")
+        logger_init.error("please install pyqlib first")
 
     try:
         import jqdatasdk as jq
         jq.auth(os.environ['JQ_USER'],os.environ['JQ_PASSWD'])
     except:
-        logger.error('please install jqdatasdk and auth it first')
+        logger_init.error('please install jqdatasdk and auth it first')
     
-    logger.info(f"路径初始化完毕。初始化路径为{QLIB_BIN_DATA_PATH}")
+    logger_init.info(f"路径初始化完毕。初始化路径为{QLIB_BIN_DATA_PATH}")
     os.environ['singletrader.init'] = '1'
 
         

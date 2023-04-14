@@ -12,7 +12,7 @@ from singletrader import __date_col__,__symbol_col__
 
 class BaseSqlApi():
     """
-    单表单列数据接口
+    数据接口mode
     """
     def __init__(self, db_config=None, symbol_col=__symbol_col__, date_col=__date_col__):
         self.db_config = db_config
@@ -103,6 +103,7 @@ class BaseSqlApi():
         
         engine = self.engine
         if self.table_name is None:
+            """单字段单表"""
             for factor in factor_list:                
                 if self.db_config.need_lower:
                     table_name = factor.lower()
@@ -143,6 +144,7 @@ class BaseSqlApi():
                             logging.info(f"{factor} download failed")
         
         else:
+            """单表多字段"""
             table_name = self.table_name
             cur_fields = [self.date_col, self.symbol_col]+ factor_list
             # fields_str = ','.join(["\"" + i + "\"" for i in cur_fields])
@@ -150,6 +152,7 @@ class BaseSqlApi():
             sql = f"select {fields_str} from {table_name} where {date_filter} and {symbol_filter}"
             i = 0
             while i < 3:
+                """3次重连"""
                 try:
                     cur_df = pd.read_sql(sql = sql, con= engine)
 
@@ -191,9 +194,10 @@ get_index_cons = BaseSqlApi(db_config=IndexCons)
 get_income = BaseSqlApi(db_config=IncomeConfig)
 get_balance = BaseSqlApi(db_config=BalanceConfig)
 get_cash_flow = BaseSqlApi(db_config=CashflowConfig)
-
+get_index_price = BaseSqlApi(db_config=IndexPrice)
 
 if __name__ == '__main__':
+    d_1 = get_index_price(start_date='2022-01-01',end_date='2022-12-31')
     d0 = get_index_cons(start_date='2005-01-01')
     d1 = get_income()
     d2 = get_balance()

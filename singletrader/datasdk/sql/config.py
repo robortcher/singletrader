@@ -60,3 +60,7 @@ class IndexCons(PostgresqlConfig):
     table_name = 'index_conponents'
 
 
+class IndexPrice(PostgresqlConfig):
+    db_name = 'finance'
+    table_name = 'index_price'
+

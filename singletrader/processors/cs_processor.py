@@ -1,9 +1,43 @@
 from functools import partial
-from .normal_processor import winzorize,_add_cs_data,standardize
+from .normal_processor import winzorize,_add_cs_data,standardize,industry_neutralize
 from abc import abstractmethod
 import pandas as pd
 from singletrader import __symbol_col__ ,__date_col__
 from singletrader.processors.operator import get_beta
+
+
+def bar_resample(data,frequency,symbol_level=1,fields=None):
+    """bar降采样函数,根据code 降采样行情数据"""
+    data_output = {}
+
+    if fields is None:
+        fields = data.columns.tolist()
+    for _field in fields:
+        if _field == 'open':
+            data_output[_field] = data[_field].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).first())
+        elif _field == 'high':
+            data_output[_field] = data[_field].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).max())
+        elif _field == 'low':
+            data_output[_field] = data[_field].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).min())
+        elif _field in ['volume','money','turnover_ratio']:
+            data_output[_field] = data[_field].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).sum())
+        else:      
+            data_output[_field] = data[_field].groupby(level=symbol_level).apply(lambda x:x.droplevel(symbol_level).resample(frequency).last())
+    
+    data_output = pd.concat(data_output,axis=1).swaplevel(0,1)
+    return data_output
+
+class CsSectorNuetrualize():
+    def __init__(self):
+        pass
+
+    def __call__(self,data):
+        return self.func(data)
+    def func(self,data):
+        data = data.groupby(level=0).apply(industry_neutralize)
+        data = data.add_suffix('_GN')
+        return data
+
 
 class CsProcessor():
     """截面处理器"""
@@ -11,7 +45,7 @@ class CsProcessor():
         self.kwargs = kwargs
 
     def __call__(self, df):
-        data =  df.groupby(level=__date_col__).apply(lambda x:x.apply(self.func))
+        data =  df.groupby(level=__date_col__).apply(self.func)
         return data
     
 
@@ -22,6 +56,7 @@ class CsProcessor():
         pass
 
 class Csqcut(CsProcessor):
+    """截面quantile cut处理"""
     def __init__(self,q=5):
         self.q = 5
         self.labels= list(range(q))
@@ -35,16 +70,16 @@ class Csqcut(CsProcessor):
 
 
 class CsNeutrualize(CsProcessor):
+    """截面中性化处理"""
     def __init__(self, CN=True, SN=True):
         self.CN = True # 是否进行市值中性化
         self.SN = True # 是否进行行业中性化
-        self.explain_data = None # 是否加载过数据
+        self.explain_data = None # 是否加载过数据，第一次创建对象实例时晖自动加载数据
     def __call__(self, df,**kwargs):
         return self.func(data=df,**kwargs)
     
     def func(self,data,**kwargs):
-        from singletrader.datasdk.qlib.base import MultiFactor
-        from singletrader.constant import Ind_info
+
         
         # 时间戳判断和处理
         start_date = data.index.get_level_values(__date_col__).min()
@@ -58,9 +93,12 @@ class CsNeutrualize(CsProcessor):
         else:
             explain_data = pd.DataFrame()
             if self.CN:
+                from singletrader.datasdk.qlib.base import MultiFactor
+        
                 explain_data = pd.concat([explain_data,MultiFactor(field=['Log($circulating_market_cap)'],name = ['market_cap'],start_date=start_date,end_date=end_date)._data],axis=1)
                 explain_data.index = explain_data.index.set_names([__date_col__,__symbol_col__])
             if self.SN:    
+                from singletrader.constant import Ind_info
                 explain_data = _add_cs_data(explain_data,pd.get_dummies(Ind_info))
                 explain_data.index = explain_data.index.set_names([__date_col__,__symbol_col__])
             self.explain_data = explain_data

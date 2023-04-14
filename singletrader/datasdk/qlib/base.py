@@ -235,10 +235,14 @@ F=SigleFactor
 
 if __name__ == '__main__':
     
-    root_dir = r'/data0/xmh/.xlib'
-    QLIB_BIN_DATA_PATH = root_dir+'/qlib_data'
+    # root_dir = r'/data0/xmh/.xlib'
+    # QLIB_BIN_DATA_PATH = root_dir+'/qlib_data'
     # from ..constant import QLIB_BIN_DATA_PATH
-    qlib.init(provider_uri=QLIB_BIN_DATA_PATH)
+    # qlib.init(provider_uri=QLIB_BIN_DATA_PATH)
+    test_field = __bar_fields__ + ['$turnover_ratio']
+    test_name = __bar_names__ + ['turnover_ratio']
+    mf = MultiFactor(field=test_field,name=test_name,start_date='2023-01-01',end_date='2023-04-07')
+    data = mf._data
     test_field = {"ROC%d"%d:"Ref($close,%d)" % d for d in (1,5,10,20,30,60)}
     fc = SigleFactor(test_field)
     fc.get_stock_next_return()

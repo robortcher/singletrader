@@ -7,13 +7,10 @@ import logging
 import logging.config
 import logging.handlers
 from datetime import datetime
-# from commons.settings import LogConfig
 import os, sys
-import json
-import time
-# from singletrader import root_dir
-# log_file = r'singletrader/shared/logging_info/singletrader'
-root_dir = 'D:\database' + '/' + '.singletrader'
+from singletrader.constant import root_dir
+
+current_date_str = datetime.now().strftime('%Y-%m-%d')
 log_file = root_dir + '/' + 'logs'
 
 
@@ -22,15 +19,9 @@ def check_and_mkdir(path):
     if not os.path.exists(path):
         os.makedirs(path)
         # logger.info(f"开始创建路径{path}")
-check_and_mkdir(log_file)
-log_path = log_file+'/'+'singletrader.log'
 
-# class _InfoFilter(logging.Filter):
-#     def filter(self, record):
-#         if logging.INFO <= record.levelno <= logging.ERROR:
-#             return super().filter(record)
-#         else:
-#             return 0
+check_and_mkdir(log_file)
+log_path = log_file+'/'+'{}.log'.format(current_date_str)
 
 
 def _get_filename(*, basename='.log', log_level='info'):
@@ -41,14 +32,6 @@ def _get_filename(*, basename='.log', log_level='info'):
     return ''.join((log_path,
         date_str, '-', pidstr, '-', log_level, '-', basename,))
 
-
-
-# def _get_filename2(*, suffix='.log', log_level='info'):
-#     file = getattr(sys.modules['__main__'], '__file__', None)
-#     date_str = datetime.today().strftime('%Y%m%d')
-#     basepath = LogConfig.PATH
-#     return ''.join((
-#         basepath, date_str, '-', os.path.splitext(os.path.basename(file))[0], suffix, ))
 
 
 class LogFactory:
@@ -64,9 +47,9 @@ class LogFactory:
                 'class': 'logging.Formatter',
                 'format': ('{"level": "%(levelname)s", '
                            '"time": "%(asctime)s", '
-                           f'"timeMillis": {int(time.time()*1000)},'
+                        #    f'"timeMillis": {int(time.time()*1000)},'
                            '"module": "%(name)s", '
-                           '"method": "python-service", '
+                        #    '"method": "python-service", '
                            '"addition": "[%(filename)s %(lineno)s %(funcName)s]", '
                            '"message": "%(message)s"}')
             },
@@ -112,11 +95,11 @@ class LogFactory:
                 'level': 'INFO',
                 'handlers': ['console', 'file', ],
             },
-            # 'proxy_trading': {  # for server
-            #     'level': 'DEBUG',
-            #     'handlers': ['console', 'file', ],
-            #     'propagate': False
-            # }
+            'singletrader.Initialization': {  # for server
+                'level': 'INFO',
+                'handlers': ['console'],
+                'propagate': False
+            }
         },
     }
 
@@ -125,8 +108,8 @@ class LogFactory:
     @classmethod
     def get_logger(cls, logger_name="singletrader-service"):
         return logging.getLogger(logger_name)
-
 logger = LogFactory.get_logger()
+logger_init = LogFactory.get_logger(logger_name='singletrader.Initialization')
 # class Logger():
 #     def info(self, msg):
 #         print(msg)
@@ -134,4 +117,4 @@ logger = LogFactory.get_logger()
 #         print(msg)
 # logger = Logger()
 if __name__ == '__main__':
-    logging.info('error')
+    logger.info('error')

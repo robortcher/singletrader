@@ -15,9 +15,9 @@ import os
 import json
 from datetime import timedelta
 try:
-    from config import ValuationConfigPG,PricePostConfigPG,AuctionConfigPG,PricePostMinuteConfigPG,IndexCons
+    from config import ValuationConfigPG,PricePostConfigPG,AuctionConfigPG,PricePostMinuteConfigPG,IndexCons,BalanceConfig,CashflowConfig,IncomeConfig,IndexPrice
 except:
-    from .config import ValuationConfigPG,PricePostConfigPG,AuctionConfigPG,PricePostMinuteConfigPG,IndexCons
+    from .config import ValuationConfigPG,PricePostConfigPG,AuctionConfigPG,PricePostMinuteConfigPG,IndexCons,BalanceConfig,CashflowConfig,IncomeConfig,IndexPrice
 
 
 
@@ -64,7 +64,6 @@ class DataRetrive():
     #     """下载数据的函数"""
     #     pass
         
-
 def get_valuation(pg=None, start_date='2005-01-01',end_date=None,trade_date=None,is_daily=False):
     """
     daily 更新前一天的数据
@@ -107,7 +106,6 @@ def get_valuation(pg=None, start_date='2005-01-01',end_date=None,trade_date=None
             print(f'inserted {day}')
         else:
             print(df0)
-
 
 def down_price(pg=None,start_date='2005-01-01',end_date=None,trade_date=None,**kwargs):
     if trade_date is not None:
@@ -152,8 +150,6 @@ def down_price_minute(pg=None,start_date='2005-01-01',end_date=None,trade_date=N
         else:
             return df
 
-
-
 #集合竞价
 def download_auction(pg=None,start_date='2005-01-01',end_date=None,trade_date=None,**kwargs):
     universe = get_all_securities().index.tolist()
@@ -171,8 +167,6 @@ def download_auction(pg=None,start_date='2005-01-01',end_date=None,trade_date=No
                             )
     else:
         return df
-
-
 
 #成分股权重
 def download_index_cons(pg=None,start_date=None,end_date=None,trade_date=None,**kwargs):
@@ -199,13 +193,65 @@ def download_index_cons(pg=None,start_date=None,end_date=None,trade_date=None,**
         else:
             return df
 
-
 def download_index_price(pg=None,start_date=None,end_date=None):
     index_list = ['000016.XSHG','000300.XSHG','000905.XSHG','000852.XSHG']
     df = get_price('000300.XSHG', start_date= start_date,end_date=end_date, frequency='daily', fields=['open','close','low','high','volume','money','high_limit','low_limit','avg','pre_close'])
     pass
 
+def download_sheets(start_date=None,end_date=None):
+    balance_pg = Postgres(conf=BalanceConfig)
+    cashflow_pg = Postgres(conf=CashflowConfig)
+    income_pg = Postgres(conf=IncomeConfig)
+    days = get_trade_days(start_date=start_date,
+                        end_date=end_date, count=None)
+    for _day in days:
+        # blance_df = finance.run_query(query(finance.STK_INCOME_STATEMENT).filter(finance.STK_INCOME_STATEMENT.pub_date==_day))
+        balance_df = jq.get_fundamentals(query(jq.balance), date=_day).rename(columns={'day':'date'})
+        income_df = jq.get_fundamentals(query(jq.income), date=_day).rename(columns={'day':'date'})
+        cashflow_df = jq.get_fundamentals(query(jq.cash_flow), date=_day).rename(columns={'day':'date'})
+        
 
+        text_columns = ['code']
+        date_columns = ['date','pubDate','statDate']
+        constraint_columns = ['date', 'code']
+
+        balance_pg.update_insert_df(balance_df, f"balance",
+                        text_columns,  # text
+                        constraint_columns,  # constraint
+                        date_columns=date_columns,
+                        )
+
+        income_pg.update_insert_df(income_df, f"income",
+                        text_columns,  # text
+                        constraint_columns,  # constraint
+                        date_columns=date_columns,
+                        )
+        
+        cashflow_pg.update_insert_df(cashflow_df, f"cashflow",
+                        text_columns,  # text
+                        constraint_columns,  # constraint
+                        date_columns=date_columns,
+                        )
+
+def download_index_price(pg=None,start_date=None,end_date=None,trade_date=None,**kwargs):
+    """获取指数行情"""
+    index_list = ['000016.XSHG','000300.XSHG','000905.XSHG','000852.XSHG']
+    index_names = ['sz50','hs300','zz500','zz1000']
+    if trade_date is not None:
+        start_date = trade_date
+        end_date = trade_date
+    df = get_price(index_list, start_date=start_date, end_date=end_date, frequency='daily', skip_paused=False, fq='post').rename(columns = {'time':'date'})
+    text_columns = ['code']
+    date_columns = ['date']
+    constraint_columns = ['date', 'code']
+    if pg is not None:
+        pg.update_insert_df(df, pg.conf.table_name,
+                        text_columns,  # text
+                        constraint_columns,  # constraint
+                        date_columns=date_columns,
+                        )
+    else:
+        return df
 
 def UpdateWriter(start_date=None,end_date=None,trade_date=None):
     if trade_date is not None:
@@ -233,8 +279,11 @@ def UpdateWriter(start_date=None,end_date=None,trade_date=None):
     indexw = DataRetrive(start_date=start_date,end_date=end_date,func=download_index_cons)
     indexw.datawriter(pg=pg_index)
 
-if __name__ == '__main__':
+    download_index_price(start_date=start_date,end_date=end_date)
+    download_sheets(start_date=start_date,end_date=end_date)
 
+if __name__ == '__main__':
+    download_sheets(start_date='2023-04-07',end_date='2023-04-07')
     import sys
 
 
