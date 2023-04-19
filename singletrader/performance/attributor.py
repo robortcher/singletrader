@@ -72,7 +72,7 @@ if __name__ == '__main__':
     logger.info('test begin')
 
 
-    attr = Attributor(start_date='2015-01-01',end_date='2023-04-10',add_ind=True)
+    attr = Attributor(start_date='2023-04-01',end_date='2023-04-16',add_ind=True)
     attr.setup_data()
     # cs_neu(attr.data['daily_return'])
     r = attr.get_summary_report()
