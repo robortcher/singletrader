@@ -61,7 +61,7 @@ def get_pure_factor_portfolio(factor_data, zero_capital=False,
     period_weight = period_weight.reindex(raw_weight.index).ffill()
     return period_weight
 
-def get_group_returns(factor_data, ret_data, groups=5, holding_period=1, cost=0,is_group_factor=False,return_weight=False):
+def get_group_returns(factor_data, ret_data, groups=5, holding_period=1, cost=0,is_group_factor=False,weights=None,return_weight=False):
     """
     分组收益计算
     """
@@ -94,10 +94,18 @@ def get_group_returns(factor_data, ret_data, groups=5, holding_period=1, cost=0,
     
 
     if not factor_group.dropna().empty:
-        group_rets = ret_data.groupby(factor_group).apply(lambda x:x.groupby(level=0).mean()).swaplevel(0,1).sort_index()
-        group_rets = group_rets.unstack()
-        group_rets_raw = ret_data_raw.groupby(factor_group).apply(lambda x:x.groupby(level=0).mean()).swaplevel(0,1).sort_index()
-        group_rets_raw = group_rets_raw.unstack()  
+        if weights is None:
+            group_rets = ret_data.groupby(factor_group).apply(lambda x:x.groupby(level=0).mean()).swaplevel(0,1).sort_index()
+            group_rets = group_rets.unstack()
+        
+            group_rets_raw = ret_data_raw.groupby(factor_group).apply(lambda x:x.groupby(level=0).mean()).swaplevel(0,1).sort_index()
+            group_rets_raw = group_rets_raw.unstack()
+        else:
+            group_rets = ret_data.groupby(factor_group).apply(lambda x:x.groupby(level=0).mean()).swaplevel(0,1).sort_index()
+            group_rets = group_rets.unstack()
+        
+            group_rets_raw = ret_data_raw.groupby(factor_group).apply(lambda x:x.groupby(level=0).mean()).swaplevel(0,1).sort_index()
+            group_rets_raw = group_rets_raw.unstack()
         
         group_rets['Long-Short'] = group_rets_raw.iloc[:,-1] - group_rets_raw.iloc[:,0]
         group_rets['Long'] = group_rets_raw.iloc[:,-1]

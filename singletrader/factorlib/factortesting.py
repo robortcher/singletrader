@@ -66,7 +66,7 @@ class FactorEvaluation:
                         excess_return=False,
                         bar_data=None,
                         total=True,
-                        universe=None
+                        universe=None,
                     ):
         """
         获取未来指定周期收益
@@ -151,10 +151,11 @@ class FactorEvaluation:
                             cost:float=0,
                             holding_period:int=1, 
                             is_group_factor:bool=False,
+                            weights = None,
                             return_weight:bool=False,
                             universe=None,
                         ):
-        if factor_list is None:
+        if factor_list is None or factor_list.__len__()==0:
             factor_list = self.all_factors
         # if ret_data is None:
         ret_data = self.get_next_return(next_n=next_n, base=base, add_shift=add_shift,excess_return=excess_return,universe=universe)
@@ -168,7 +169,7 @@ class FactorEvaluation:
             if universe is not None:
                 factor_data = pd.Series(np.where(universe>0,factor_data,np.nan),index=factor_data.index, name=factor)
  
-            group_results.append(get_group_returns(factor_data, ret_data, groups=groups, holding_period=holding_period,cost=cost,is_group_factor=is_group_factor,return_weight=return_weight))
+            group_results.append(get_group_returns(factor_data, ret_data, groups=groups, weights=weights,holding_period=holding_period,cost=cost,is_group_factor=is_group_factor,return_weight=return_weight))
             # logging.info(f"因子{factor}的分组收益计算结束")
         if not return_weight:
             group_returns = pd.concat(group_results,axis=1)
@@ -333,7 +334,7 @@ class FactorEvaluation:
                     cost=0,
                     coumpound=False
                     ):
-        universe_name = universe.name
+        universe_name = getattr(universe,"name",None)
         excess_str = 'excess return'  if excess_return else 'absolute return'
         def _ic_analysis(self):
             ic_df = self.get_factor_ic(method='normal',start_date=start_date,next_n=holding_period,base=base,add_shift=add_shift,excess_return=excess_return,total=total,universe=universe)
@@ -396,8 +397,8 @@ class FactorEvaluation:
                                 end_date=None,
                                 universe=None,
                                 is_event=False,
-                                ep_group=None, # ep分组数据
-                                liquidity_group=None, # liquid分组数据
+                                ep_col=None, # ep分组数据
+                                liquidity_col=None, # liquid分组数据
                                 cost=0,
                                 plot=None
                             ):
@@ -467,16 +468,17 @@ class FactorEvaluation:
                 result['groups'][f'G{_group}'] = performance_result
 
             # self.factor_data = self.raw_factor_data.copy()
-            try:
-                result['factor_ana'] =  self.factor_ana(
-                                        factor=factor,
-                                        ep_group=ep_group, # ep分组数据
-                                        liquidity_group=liquidity_group, # liquid分组数据
-                                        add_shift=add_shift,
-                                        base=base
-                )
-            except:
-                pass
+            # try:
+            result['factor_ana'] =  self.factor_ana(
+                                    factor=factor,
+                                    ep_col=ep_col, # ep分组数据
+                                    liquidity_col=liquidity_col, # liquid分组数据
+                                    add_shift=add_shift,
+                                    base=base,
+                                    universe=universe
+            )
+            # except:
+            #     pass
         
         if plot is not None:
             try:
@@ -511,24 +513,32 @@ class FactorEvaluation:
             # self.factor_data = self.raw_factor_data.copy()
         return all_perfs
 
-    def factor_ana(self,factor,ep_group,liquidity_group,**kwargs):
+    def factor_ana(self,factor,ep_col,liquidity_col,universe=None,**kwargs):
         """获取不同组别factor的"""
-        def get_ep_liq_group_ic(factor,group_df=ep_group,**kwargs):
+        def get_ep_liq_group_ic(factor,group_df,**kwargs):
             ics = {}
+            
             group_set = ['low','medium','high']#set(group_df.values)
             for group in group_set:
                 ics[group] = ic_analysis(FactorEvaluation(bar_data=self.bar_data,factor_data=self.factor_data[factor],freq=self.freq,winzorize=self._winzorize,standardize=self._standardize,industry_neutralize=self._industry_neutralize),universe=(group_df==group).astype(np.int), **kwargs)
-            ics['total'] = ic_analysis(FactorEvaluation(bar_data=self.bar_data,factor_data=self.factor_data[factor],freq=self.freq,winzorize=self._winzorize,standardize=self._standardize,industry_neutralize=self._industry_neutralize),**kwargs)
+            ics['total'] = ic_analysis(FactorEvaluation(bar_data=self.bar_data,factor_data=self.factor_data[factor],freq=self.freq,winzorize=self._winzorize,standardize=self._standardize,industry_neutralize=self._industry_neutralize),universe=universe,**kwargs)
             ics = pd.concat(ics)
             # ics = ics.reindex(['total'] + ['low','moderate_low','medium','moderate_high','high'],axis=1)
             return ics
         res = {}
-        res['ep groups'] = get_ep_liq_group_ic(factor,**kwargs)
-        # 不同ep组别ic均值输出
-    
-        # bar2 = px.bar(t[t.index.get_level_values(2)=='ic.mean'].droplevel(2).unstack().droplevel(0,axis=1),barmode='group',title=f'avg.ic of different ep groups of {factor}')
-        # # HTML(bar2.to_html())
-        # # bar2.show()
+
+        ep_data = self.bar_data[ep_col]
+        if universe is not None:
+            ep_data = ep_data[universe>0]
+        ep_group = ep_data.groupby(level=0).apply(lambda x:pd.qcut(x,3,labels=['low','medium','high']))
+
+        res['ep groups'] = get_ep_liq_group_ic(factor,group_df=ep_group,**kwargs)
+
+        liquidity_data = self.bar_data[liquidity_col]
+        if universe is not None:
+            liquidity_data = liquidity_data[universe>0]
+        liquidity_group = liquidity_data.groupby(level=0).apply(lambda x:pd.qcut(x,3,labels=['low','medium','high']))
+        
         
         # 不同liquidity组别ic均值输出
         res['liquidity groups'] = get_ep_liq_group_ic(factor,group_df=liquidity_group,**kwargs)

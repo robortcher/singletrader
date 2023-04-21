@@ -120,7 +120,7 @@ def summary_plot(report,excess=True,mode='notebook'):
 
 
     bar_factor_ana = px.bar(report['factor_ana'],x='set',y='ic.mean',color='group',barmode='group',title='ic of different ep & liquidity')
-    bar_factor_ana.update_layout(title=f"{factor}  ic of different sort")
+    bar_factor_ana.update_layout(title=f"{factor}  ic of different sort<br />universe:{report['universe']}")
     fig_list.append(bar_factor_ana)
 
     for _i in range(len(fig_list)):
